@@ -116,11 +116,16 @@ export const Wheel = forwardRef<WheelHandle, { titles: string[] }>(function Whee
           }}
         >
           {slices.map((s, i) => (
-            <g key={`${s.title}-${i}`}>
-              <path d={s.path} fill={PALETTE[i % PALETTE.length]} stroke="#0b0f1a" strokeWidth="2" />
-              {total <= 28 && <Label midDeg={s.midDeg} title={s.title} />}
-            </g>
+            <path
+              key={`${s.title}-${i}`}
+              d={s.path}
+              fill={PALETTE[i % PALETTE.length]}
+              stroke="#0b0f1a"
+              strokeWidth="2"
+            />
           ))}
+          {total <= 28 &&
+            slices.map((s, i) => <Label key={`label-${s.title}-${i}`} midDeg={s.midDeg} title={s.title} />)}
         </g>
 
         <circle cx={CX} cy={CY} r={R} fill="none" stroke="#2b3a57" strokeWidth="6" />
@@ -142,25 +147,22 @@ export const Wheel = forwardRef<WheelHandle, { titles: string[] }>(function Whee
 });
 
 function Label({ midDeg, title }: { midDeg: number; title: string }) {
-  const normalized = ((midDeg % 360) + 360) % 360;
-  const flipped = normalized > 180;
-  const labelR = 132;
-  const x = CX + (flipped ? -labelR : labelR);
-  const rot = flipped ? midDeg + 180 : midDeg;
+  const labelR = 118;
+  const text = title.length > 18 ? `${title.slice(0, 17)}…` : title;
 
   return (
     <text
-      x={x}
+      x={CX + labelR}
       y={CY}
-      textAnchor={flipped ? "end" : "start"}
+      textAnchor="middle"
       dominantBaseline="middle"
-      transform={`rotate(${rot} ${CX} ${CY})`}
+      transform={`rotate(${midDeg} ${CX} ${CY})`}
       fontSize="15"
       fontWeight="600"
       fill="#0b0f1a"
       className="pointer-events-none"
     >
-      {title.length > 18 ? `${title.slice(0, 17)}…` : title}
+      {text}
     </text>
   );
 }

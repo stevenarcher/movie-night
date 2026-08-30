@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
 import { sendGroupMessage } from "@/whatsapp/send";
-import { conflict, ok, unauthorized } from "@/lib/api";
+import { normalizeTitle } from "@/whatsapp/normalize";
+import { badRequest, conflict, ok, serverError, unauthorized } from "@/lib/api";
 
 /**
  * Locks in this week's movie.
@@ -70,4 +71,50 @@ export async function POST() {
   return ok({
     screening: { id: screening.id, weekNumber: screening.weekNumber, movieTitle: screening.movieTitle },
   });
+}
+
+/**
+ * Unlocks this week's movie so the wheel can be spun again. The screening is
+ * removed and the picked title is returned to the candidate pool. Only safe for
+ * the current, unrated week — past weeks cannot be reopened.
+ */
+export async function DELETE() {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorized();
+
+  const week = currentWeek();
+
+  const existing = await prisma.screening.findUnique({
+    where: { weekNumber: week.weekNumber },
+    select: { id: true, movieTitle: true },
+  });
+  if (!existing) {
+    return badRequest("No movie is locked in for this week yet.");
+  }
+
+  const normalizedTitle = normalizeTitle(existing.movieTitle);
+
+  const alreadyInPool = await prisma.candidate.findUnique({ where: { normalizedTitle } });
+  if (alreadyInPool) {
+    return badRequest("That movie is already back in the pool — only the locked pick can be reset.");
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.candidate.create({
+        data: {
+          title: existing.movieTitle,
+          normalizedTitle,
+          source: "MANUAL",
+          metadata: { note: "Restored after resetting this week's spin" },
+        },
+      });
+      await tx.screening.delete({ where: { id: existing.id } });
+    });
+  } catch (error) {
+    console.error("[select] reset failed", error);
+    return serverError("Failed to reset the week");
+  }
+
+  return ok({ removed: existing.movieTitle });
 }

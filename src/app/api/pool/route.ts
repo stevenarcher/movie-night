@@ -7,9 +7,37 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return unauthorized();
 
-  const candidates = await prisma.candidate.findMany({
+  const rows = await prisma.candidate.findMany({
     orderBy: { createdAt: "asc" },
-    select: { id: true, title: true, source: true, createdAt: true },
+    select: { id: true, title: true, source: true, createdAt: true, metadata: true },
+  });
+
+  const candidates = rows.map((c) => {
+    const m = (c.metadata ?? {}) as { posterUrl?: string; offers?: unknown[] };
+    const offers = (m.offers ?? []).map((o) => {
+      const offer = (o ?? {}) as {
+        type?: string;
+        provider?: string;
+        price?: number | null;
+        url?: string;
+      };
+      return {
+        type: (["RENT", "BUY", "STREAM", "FREE"] as const).includes(offer.type as never)
+          ? (offer.type as "RENT" | "BUY" | "STREAM" | "FREE")
+          : "STREAM",
+        provider: offer.provider ?? "",
+        price: offer.price ?? null,
+        url: offer.url ?? "",
+      };
+    });
+    return {
+      id: c.id,
+      title: c.title,
+      source: c.source,
+      createdAt: c.createdAt,
+      posterUrl: m.posterUrl ?? null,
+      offers,
+    };
   });
 
   return ok({ candidates, count: candidates.length });

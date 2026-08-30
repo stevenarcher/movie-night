@@ -2,11 +2,33 @@
 
 import { useCallback, useState } from "react";
 
+type Offer = {
+  type: "RENT" | "BUY" | "STREAM" | "FREE";
+  provider: string;
+  price: number | null;
+  url: string;
+};
+
 type Candidate = {
   id: string;
   title: string;
   source: "WHATSAPP" | "MANUAL";
   createdAt: string;
+  posterUrl: string | null;
+  offers: Offer[];
+};
+
+function formatPrice(price: number | null): string {
+  if (price === null) return "Included";
+  if (price === 0) return "Free";
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(price);
+}
+
+const TYPE_LABEL: Record<Offer["type"], string> = {
+  RENT: "Rent",
+  BUY: "Buy",
+  STREAM: "Stream",
+  FREE: "Free",
 };
 
 export function PoolClient({
@@ -155,25 +177,61 @@ export function PoolClient({
           <p className="text-sm">Add one above, or wire up the WhatsApp webhook.</p>
         </div>
       ) : (
-        <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-2xl border border-edge bg-panel">
-          {candidates.map((c, i) => (
-            <li key={c.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="w-7 shrink-0 font-mono text-xs text-muted">{i + 1}</span>
+        <ul className="flex flex-col gap-3">
+          {candidates.map((c) => (
+            <li
+              key={c.id}
+              className="flex gap-4 rounded-2xl border border-edge bg-panel p-4"
+            >
+              {c.posterUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.posterUrl}
+                  alt={`${c.title} poster`}
+                  loading="lazy"
+                  className="h-[128px] w-[85px] shrink-0 self-start rounded-lg object-cover"
+                />
+              )}
+
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{c.title}</p>
-                <p className="text-xs text-muted">
-                  {c.source === "WHATSAPP" ? "via WhatsApp" : "manual"} ·{" "}
-                  {new Date(c.createdAt).toLocaleDateString()}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{c.title}</p>
+                    <p className="text-xs text-muted">
+                      {c.source === "WHATSAPP" ? "via WhatsApp" : "manual"} ·{" "}
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMovie(c.id)}
+                    className="rounded-lg px-2 py-1 text-sm text-muted hover:bg-white/5 hover:text-foreground transition-colors"
+                    title="Remove from pool"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {c.offers.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {c.offers.map((o) => (
+                      <a
+                        key={`${o.provider}-${o.type}`}
+                        href={o.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+                      >
+                        <span className="rounded bg-background px-1 py-0.5 font-mono text-[10px] uppercase tracking-wide">
+                          {TYPE_LABEL[o.type] ?? o.type}
+                        </span>
+                        <span className="font-medium">{o.provider}</span>
+                        <span className="text-foreground">{formatPrice(o.price)}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => removeMovie(c.id)}
-                className="rounded-lg px-2 py-1 text-sm text-muted hover:bg-white/5 hover:text-foreground transition-colors"
-                title="Remove from pool"
-              >
-                ✕
-              </button>
             </li>
           ))}
         </ul>

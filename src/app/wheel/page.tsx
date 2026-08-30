@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
 import { WheelClient } from "@/components/WheelClient";
+import { ResetSpinButton } from "@/components/ResetSpinButton";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ function LockedPanel({ movieTitle, weekNumber }: { movieTitle: string; weekNumbe
       <p className="mt-6 text-sm text-muted">
         The wheel waits for next week. Everyone can rate the pick in the archive.
       </p>
+      <ResetSpinButton movieTitle={movieTitle} />
     </div>
   );
 }

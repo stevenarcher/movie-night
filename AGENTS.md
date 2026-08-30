@@ -54,9 +54,12 @@ are verified. `.env` / `.env.example` hold `DATABASE_URL` + `AUTH_SECRET`.
 ## Auth
 
 NextAuth v5 (**beta, database sessions**) + Google. `session.user.id` is augmented via
-`src/types/next-auth.d.ts`; the sign-in callback persists `googleId`. `AUTH_GOOGLE_ID/SECRET`
-are unset → login is unusable until creds are added. API routes auth with
-`const s = await auth(); if (!s?.user?.id) return unauthorized();`.
+`src/types/next-auth.d.ts`; the sign-in callback persists `googleId`. Local `.env` has
+`AUTH_GOOGLE_ID/SECRET` set (dev web client); the Google Console's authorized redirect URI must
+include `http://localhost:3000/api/auth/callback/google` or browser login fails with
+`redirect_uri_mismatch`. API routes auth with
+`const s = await auth(); if (!s?.user?.id) return unauthorized();`. Google creds load at server
+start — restart `next dev` after editing `.env`.
 
 ## WhatsApp (Cloud API)
 

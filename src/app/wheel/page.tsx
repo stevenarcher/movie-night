@@ -32,7 +32,12 @@ export default async function WheelPage() {
       {locked ? (
         <LockedPanel movieTitle={locked.movieTitle} weekNumber={locked.weekNumber} />
       ) : (
-        <WheelClient candidates={candidates.map((c) => c.title)} />
+        <WheelClient
+          candidates={candidates.map((c) => ({
+            title: c.title,
+            posterUrl: (c.metadata as { posterUrl?: string } | null)?.posterUrl ?? null,
+          }))}
+        />
       )}
     </div>
   );

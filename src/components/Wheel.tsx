@@ -40,8 +40,10 @@ export interface WheelHandle {
   spinTo: (index: number) => Promise<void>;
 }
 
-export const Wheel = forwardRef<WheelHandle, { titles: string[] }>(function Wheel(
-  { titles },
+export type WheelSegment = { title: string; posterUrl: string | null };
+
+export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(function Wheel(
+  { segments },
   ref,
 ) {
   const [rotation, setRotation] = useState(0);
@@ -49,17 +51,19 @@ export const Wheel = forwardRef<WheelHandle, { titles: string[] }>(function Whee
   const promiseRef = useRef<{ resolve: () => void } | null>(null);
   const timedOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const total = titles.length;
+  const total = segments.length;
   const sweep = total > 0 ? 360 / total : 360;
   const minRevolutions = 5;
 
   const slices = useMemo(() => {
-    return titles.map((title, i) => {
+    return segments.map((segment, i) => {
       const startDeg = -90 + i * sweep;
+      const endDeg = startDeg + sweep;
       const midDeg = startDeg + sweep / 2;
-      return { title, midDeg, path: slicePath(CX, CY, R, startDeg, startDeg + sweep) };
+      const path = slicePath(CX, CY, R, startDeg, endDeg);
+      return { ...segment, midDeg, startDeg, endDeg, path };
     });
-  }, [titles, sweep]);
+  }, [segments, sweep]);
 
   function finish() {
     const res = promiseRef.current;
@@ -98,71 +102,154 @@ export const Wheel = forwardRef<WheelHandle, { titles: string[] }>(function Whee
     [slices, rotation],
   );
 
+  const rotationStyle = {
+    transform: `rotate(${rotation}deg)`,
+    transformOrigin: "200px 200px",
+    transition: spinning
+      ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.15, 1)`
+      : "none",
+  };
+
   return (
-    <div className="relative mx-auto h-[400px] w-[400px] select-none sm:h-[460px] sm:w-[460px]">
-      <svg viewBox="0 0 400 400" className="h-full w-full drop-shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
-        <g
-          style={{
-            transform: `rotate(${rotation}deg)`,
-            transformOrigin: "200px 200px",
-            transition: spinning
-              ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.15, 1)`
-              : "none",
-          }}
-          onTransitionEnd={() => {
-            if (timedOutRef.current) {
-              finish();
-            }
-          }}
-        >
+    <div className="relative mx-auto flex h-[400px] w-[400px] items-center justify-center select-none sm:h-[460px] sm:w-[460px]">
+      {/* Shared 400x400 coordinate box for both the poster wedges and the SVG,
+          scaled up together on sm so they never fall out of alignment. */}
+      <div className="relative h-[400px] w-[400px] shrink-0 sm:scale-[1.15]">
+        {/* Poster wedge layer — blurred poster (or palette) fills each segment via the slice path. */}
+        <div className="absolute inset-0" style={rotationStyle} aria-hidden="true">
           {slices.map((s, i) => (
-            <path
-              key={`${s.title}-${i}`}
-              d={s.path}
-              fill={PALETTE[i % PALETTE.length]}
-              stroke="#0b0f1a"
-              strokeWidth="2"
+            <div
+              key={`wedge-${s.title}-${i}`}
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundColor: PALETTE[i % PALETTE.length],
+                backgroundImage: s.posterUrl ? `url(${s.posterUrl})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                clipPath: `path("${s.path}")`,
+                pointerEvents: "none",
+              }}
             />
           ))}
-          {total <= 28 &&
-            slices.map((s, i) => <Label key={`label-${s.title}-${i}`} midDeg={s.midDeg} title={s.title} />)}
-        </g>
+        </div>
 
-        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#2b3a57" strokeWidth="6" />
-        <circle cx={CX} cy={CY} r={R - 12} fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="1" />
+        <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full drop-shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
+          <g
+            style={rotationStyle}
+            onTransitionEnd={() => {
+              if (timedOutRef.current) {
+                finish();
+              }
+            }}
+          >
+            {slices.map((s, i) => (
+              <path key={`${s.title}-${i}`} d={s.path} fill="none" stroke="#0b0f1a" strokeWidth="2" />
+            ))}
+            {total <= 28 &&
+              slices.map((s, i) => <Label key={`label-${s.title}-${i}`} midDeg={s.midDeg} title={s.title} />)}
+          </g>
 
-        <circle cx={CX} cy={CY} r="46" fill="#121a2b" stroke="#2b3a57" strokeWidth="4" />
-        <circle cx={CX} cy={CY} r="30" fill="#1c2740" />
-        <text x={CX} y={CY + 2} textAnchor="middle" dominantBaseline="middle" className="fill-white" fontSize="26">
-          🎬
-        </text>
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="#2b3a57" strokeWidth="6" />
+          <circle cx={CX} cy={CY} r={R - 12} fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="1" />
 
-        <g>
-          <path d={`M ${CX - 16} 6 L ${CX + 16} 6 L ${CX} 42 Z`} fill="#f43f5e" />
-          <circle cx={CX} cy={10} r="7" fill="#0b0f1a" stroke="#f43f5e" strokeWidth="3" />
-        </g>
-      </svg>
+          <circle cx={CX} cy={CY} r="46" fill="#121a2b" stroke="#2b3a57" strokeWidth="4" />
+          <circle cx={CX} cy={CY} r="30" fill="#1c2740" />
+          <text x={CX} y={CY + 2} textAnchor="middle" dominantBaseline="middle" className="fill-white" fontSize="26">
+            🎬
+          </text>
+
+          <g>
+            <path d={`M ${CX - 16} 6 L ${CX + 16} 6 L ${CX} 42 Z`} fill="#f43f5e" />
+            <circle cx={CX} cy={10} r="7" fill="#0b0f1a" stroke="#f43f5e" strokeWidth="3" />
+          </g>
+        </svg>
+      </div>
     </div>
   );
 });
 
+function wrapTitle(title: string, maxChars: number): string[] {
+  const tokens: string[] = [];
+  for (const t of title.split(" ").filter(Boolean)) {
+    if (t.length <= maxChars) tokens.push(t);
+    else {
+      let rest = t;
+      while (rest.length > maxChars) {
+        tokens.push(rest.slice(0, maxChars));
+        rest = rest.slice(maxChars);
+      }
+      tokens.push(rest);
+    }
+  }
+
+  let line1 = "";
+  let line2 = "";
+  let overflow = false;
+  for (const word of tokens) {
+    const onto1 = line1 ? `${line1} ${word}` : word;
+    if (onto1.length <= maxChars) {
+      line1 = onto1;
+      continue;
+    }
+    const onto2 = line2 ? `${line2} ${word}` : word;
+    if (onto2.length <= maxChars) {
+      line2 = onto2;
+      continue;
+    }
+    overflow = true;
+    break;
+  }
+
+  const result = line1 ? [line1] : [];
+  if (line2) result.push(line2);
+  if (overflow) {
+    const lastIndex = result.length - 1;
+    const last = lastIndex >= 0 ? result[lastIndex] : "";
+    result[result.length] =
+      last.length >= maxChars ? `${last.slice(0, maxChars - 1)}…` : last ? `${last}…` : "…";
+  }
+  return result.length ? result : [title.slice(0, maxChars - 1) + "…"];
+}
+
 function Label({ midDeg, title }: { midDeg: number; title: string }) {
-  const labelR = 118;
-  const text = title.length > 18 ? `${title.slice(0, 17)}…` : title;
+  const outerR = R - 14;
+  const angleRad = ((midDeg - 90) * Math.PI) / 180;
+  const px = CX + outerR * Math.cos(angleRad);
+  const py = CY + outerR * Math.sin(angleRad);
+  const tangentDeg = midDeg + 90;
+  const lines = wrapTitle(title, 12);
+  const lineHeight = 13;
+  const bodyH = lines.length * lineHeight;
+  const padX = 6;
+  const maxWidth = Math.max(...lines.map((l) => l.length)) * 5.8;
 
   return (
-    <text
-      x={CX + labelR}
-      y={CY}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      transform={`rotate(${midDeg} ${CX} ${CY})`}
-      fontSize="15"
-      fontWeight="600"
-      fill="#0b0f1a"
-      className="pointer-events-none"
-    >
-      {text}
-    </text>
+    <g transform={`translate(${px} ${py}) rotate(${tangentDeg})`}>
+      <rect
+        x={-padX}
+        y={-bodyH / 2 - 5}
+        width={maxWidth + padX * 2}
+        height={bodyH + 10}
+        rx={9}
+        fill="white"
+        opacity="0.95"
+      />
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={0}
+          y={lineHeight * (i - lines.length / 2) + lineHeight / 2}
+          textAnchor="start"
+          dominantBaseline="central"
+          fontSize="11"
+          fontWeight="700"
+          fill="#0b0f1a"
+          className="pointer-events-none"
+        >
+          {line}
+        </text>
+      ))}
+    </g>
   );
 }

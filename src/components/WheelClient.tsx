@@ -6,7 +6,9 @@ import { Wheel, type WheelHandle } from "@/components/Wheel";
 
 type Winner = { movieTitle: string; weekNumber: number };
 
-export function WheelClient({ candidates }: { candidates: string[] }) {
+type Candidate = { title: string; posterUrl: string | null };
+
+export function WheelClient({ candidates }: { candidates: Candidate[] }) {
   const wheelRef = useRef<WheelHandle>(null);
   const [winner, setWinner] = useState<Winner | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -40,7 +42,9 @@ export function WheelClient({ candidates }: { candidates: string[] }) {
     }
 
     // Find the picked movie's position so the wheel lands exactly on it.
-    let index = candidates.findIndex((t) => t.toLowerCase() === screening.movieTitle.toLowerCase());
+    let index = candidates.findIndex(
+      (c) => c.title.toLowerCase() === screening.movieTitle.toLowerCase(),
+    );
     if (index < 0) index = Math.floor(Math.random() * candidates.length);
 
     setSpinning(true);
@@ -52,7 +56,7 @@ export function WheelClient({ candidates }: { candidates: string[] }) {
 
   return (
     <div className="flex flex-col items-center gap-8">
-      <Wheel ref={wheelRef} titles={candidates} />
+      <Wheel ref={wheelRef} segments={candidates} />
 
       {error ? (
         <p className="max-w-md rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-center text-sm text-foreground">

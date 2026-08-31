@@ -327,37 +327,26 @@ function Label({ midDeg, title, winning }: { midDeg: number; title: string; winn
   const tangentDeg = midDeg + 90;
   const lines = wrapTitle(title, 12);
   const lineHeight = 13;
-  const bodyH = lines.length * lineHeight;
-  const padX = 6;
-  const maxWidth = Math.max(...lines.map((l) => l.length)) * 5.8;
 
   return (
     <g transform={`translate(${px} ${py}) rotate(${tangentDeg})`}>
-      <rect
-        className={winning ? "winner-pop" : undefined}
-        x={-padX}
-        y={-bodyH / 2 - 5}
-        width={maxWidth + padX * 2}
-        height={bodyH + 10}
-        rx={9}
-        fill="white"
-        opacity="0.95"
-      />
-      {lines.map((line, i) => (
-        <text
-          key={i}
-          x={0}
-          y={lineHeight * (i - lines.length / 2) + lineHeight / 2}
-          textAnchor="start"
-          dominantBaseline="central"
-          fontSize="11"
-          fontWeight="700"
-          fill="#0b0f1a"
-          className="pointer-events-none"
-        >
-          {line}
-        </text>
-      ))}
+      <g className={winning ? "winner-pop" : undefined}>
+        {lines.map((line, i) => (
+          <text
+            key={i}
+            x={0}
+            y={lineHeight * (i - lines.length / 2) + lineHeight / 2}
+            textAnchor="start"
+            dominantBaseline="central"
+            fontSize="11"
+            fontWeight="700"
+            fill={winning ? "#02df82" : "#050706"}
+            className="pointer-events-none"
+          >
+            {line}
+          </text>
+        ))}
+      </g>
     </g>
   );
 }

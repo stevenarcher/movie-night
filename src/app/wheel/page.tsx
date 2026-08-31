@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
+import { movieMeta, type MovieMeta } from "@/lib/movie-meta";
 import { WheelClient } from "@/components/WheelClient";
 import { ResetSpinButton } from "@/components/ResetSpinButton";
 
@@ -14,7 +15,7 @@ export default async function WheelPage() {
     prisma.candidate.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.screening.findUnique({
       where: { weekNumber: week.weekNumber },
-      select: { movieTitle: true, weekNumber: true },
+      select: { movieTitle: true, weekNumber: true, metadata: true },
     }),
   ]);
 
@@ -30,12 +31,16 @@ export default async function WheelPage() {
       </div>
 
       {locked ? (
-        <LockedPanel movieTitle={locked.movieTitle} weekNumber={locked.weekNumber} />
+        <LockedPanel
+          movieTitle={locked.movieTitle}
+          weekNumber={locked.weekNumber}
+          meta={movieMeta(locked.metadata)}
+        />
       ) : (
         <WheelClient
           candidates={candidates.map((c) => ({
             title: c.title,
-            posterUrl: (c.metadata as { posterUrl?: string } | null)?.posterUrl ?? null,
+            posterUrl: movieMeta(c.metadata).posterUrl,
           }))}
         />
       )}
@@ -43,20 +48,68 @@ export default async function WheelPage() {
   );
 }
 
-function LockedPanel({ movieTitle, weekNumber }: { movieTitle: string; weekNumber: number }) {
+function LockedPanel({
+  movieTitle,
+  weekNumber,
+  meta,
+}: {
+  movieTitle: string;
+  weekNumber: number;
+  meta: MovieMeta;
+}) {
   return (
-    <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-edge bg-panel p-10 text-center">
-      <div className="text-4xl">🎬</div>
-      <div className="slate mt-6">
-        <span className="sc">TAKE 01</span>
-        <span className="nm">locked</span>
+    <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-edge bg-panel">
+      {meta.posterUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={meta.posterUrl}
+          alt={`${movieTitle} poster`}
+          className="h-64 w-full border-b border-edge object-cover"
+        />
+      )}
+      <div className="p-10 text-center">
+        <div className="text-4xl">🎬</div>
+        <div className="slate mt-6">
+          <span className="sc">TAKE 01</span>
+          <span className="nm">locked</span>
+        </div>
+        <p className="eyebrow mt-8">Week {weekNumber} is already locked in</p>
+        <h2 className="font-display mt-3 text-3xl leading-tight">{movieTitle}</h2>
+        <p className="mt-5 text-sm text-muted">
+          The wheel waits for next week. Everyone can rate the pick in the archive.
+        </p>
+
+        {meta.trailerUrl && (
+          <a
+            href={meta.trailerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-edge px-4 py-1.5 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+          >
+            ▶ Watch trailer
+          </a>
+        )}
+
+        {meta.offers.length > 0 && (
+          <div className="mt-6 flex flex-wrap justify-center gap-1.5">
+            {meta.offers.map((o) => (
+              <a
+                key={`${o.provider}-${o.type}-${o.url}`}
+                href={o.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-edge px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+              >
+                {o.provider} · {o.type.toLowerCase()}
+              </a>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-8">
+          <ResetSpinButton movieTitle={movieTitle} />
+        </div>
       </div>
-      <p className="eyebrow mt-8">Week {weekNumber} is already locked in</p>
-      <h2 className="font-display mt-3 text-3xl leading-tight">{movieTitle}</h2>
-      <p className="mt-5 text-sm text-muted">
-        The wheel waits for next week. Everyone can rate the pick in the archive.
-      </p>
-      <ResetSpinButton movieTitle={movieTitle} />
     </div>
   );
 }

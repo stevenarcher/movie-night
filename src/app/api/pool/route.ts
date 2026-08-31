@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { movieMeta } from "@/lib/movie-meta";
 import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 import { validateTitle } from "@/whatsapp/validate";
 
@@ -13,30 +14,14 @@ export async function GET() {
   });
 
   const candidates = rows.map((c) => {
-    const m = (c.metadata ?? {}) as { posterUrl?: string; offers?: unknown[] };
-    const offers = (m.offers ?? []).map((o) => {
-      const offer = (o ?? {}) as {
-        type?: string;
-        provider?: string;
-        price?: number | null;
-        url?: string;
-      };
-      return {
-        type: (["RENT", "BUY", "STREAM", "FREE"] as const).includes(offer.type as never)
-          ? (offer.type as "RENT" | "BUY" | "STREAM" | "FREE")
-          : "STREAM",
-        provider: offer.provider ?? "",
-        price: offer.price ?? null,
-        url: offer.url ?? "",
-      };
-    });
+    const meta = movieMeta(c.metadata);
     return {
       id: c.id,
       title: c.title,
       source: c.source,
       createdAt: c.createdAt,
-      posterUrl: m.posterUrl ?? null,
-      offers,
+      posterUrl: meta.posterUrl,
+      offers: meta.offers,
     };
   });
 

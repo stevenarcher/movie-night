@@ -15,6 +15,7 @@ type Candidate = {
   source: "WHATSAPP" | "MANUAL";
   createdAt: string;
   posterUrl: string | null;
+  trailerUrl: string | null;
   offers: Offer[];
 };
 
@@ -211,6 +212,17 @@ export function PoolClient({
                     ✕
                   </button>
                 </div>
+
+                {c.trailerUrl && (
+                  <a
+                    href={c.trailerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-edge px-3 py-1 text-xs text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+                  >
+                    ▶ Trailer
+                  </a>
+                )}
 
                 {c.offers.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">

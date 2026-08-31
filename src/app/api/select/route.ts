@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
+import { movieMeta } from "@/lib/movie-meta";
 import { sendGroupMessage } from "@/whatsapp/send";
 import { normalizeTitle } from "@/whatsapp/normalize";
 import { badRequest, conflict, ok, serverError, unauthorized } from "@/lib/api";
@@ -26,13 +27,14 @@ export async function POST() {
   }
 
   const candidates = await prisma.candidate.findMany({
-    select: { id: true, title: true },
+    select: { id: true, title: true, metadata: true },
   });
   if (candidates.length === 0) {
     return conflict("The candidate pool is empty — add movies before spinning.");
   }
 
   const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  const pickedMeta = movieMeta(pick.metadata);
 
   const screening = await prisma.$transaction(async (tx) => {
     const created = await tx.screening.create({
@@ -42,6 +44,13 @@ export async function POST() {
         movieTitle: pick.title,
         candidateId: pick.id,
         selectedByUserId: session.user!.id,
+        // Carry the poster, trailer, and watch links over from the candidate so
+        // they survive the move into the archive (the candidate row is deleted).
+        metadata: {
+          posterUrl: pickedMeta.posterUrl,
+          trailerUrl: pickedMeta.trailerUrl,
+          offers: pickedMeta.offers,
+        },
       },
     });
     await tx.candidate.delete({ where: { id: pick.id } }).catch(() => {});
@@ -69,7 +78,14 @@ export async function POST() {
   void sendGroupMessage(`🎬 Movie Night week ${week.weekNumber} is… "${screening.movieTitle}"!`).catch(() => {});
 
   return ok({
-    screening: { id: screening.id, weekNumber: screening.weekNumber, movieTitle: screening.movieTitle },
+    screening: {
+      id: screening.id,
+      weekNumber: screening.weekNumber,
+      movieTitle: screening.movieTitle,
+      posterUrl: pickedMeta.posterUrl,
+      trailerUrl: pickedMeta.trailerUrl,
+      offers: pickedMeta.offers,
+    },
   });
 }
 
@@ -86,7 +102,7 @@ export async function DELETE() {
 
   const existing = await prisma.screening.findUnique({
     where: { weekNumber: week.weekNumber },
-    select: { id: true, movieTitle: true },
+    select: { id: true, movieTitle: true, metadata: true },
   });
   if (!existing) {
     return badRequest("No movie is locked in for this week yet.");
@@ -99,6 +115,8 @@ export async function DELETE() {
     return badRequest("That movie is already back in the pool — only the locked pick can be reset.");
   }
 
+  const restored = movieMeta(existing.metadata);
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.candidate.create({
@@ -106,7 +124,13 @@ export async function DELETE() {
           title: existing.movieTitle,
           normalizedTitle,
           source: "MANUAL",
-          metadata: { note: "Restored after resetting this week's spin" },
+          metadata: {
+            ...((existing.metadata as object | null) ?? {}),
+            note: "Restored after resetting this week's spin",
+            posterUrl: restored.posterUrl ?? undefined,
+            trailerUrl: restored.trailerUrl ?? undefined,
+            offers: restored.offers,
+          },
         },
       });
       await tx.screening.delete({ where: { id: existing.id } });

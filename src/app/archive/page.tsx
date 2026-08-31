@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { movieMeta } from "@/lib/movie-meta";
 import { ArchiveClient, type RankingView, type ScreeningView } from "@/components/ArchiveClient";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export default async function ArchivePage() {
       weekNumber: true,
       weekStart: true,
       movieTitle: true,
+      metadata: true,
       ratings: { select: { value: true, userId: true } },
     },
   });
@@ -22,11 +24,15 @@ export default async function ArchivePage() {
     const values = s.ratings.map((r) => r.value);
     const count = values.length;
     const average = count > 0 ? values.reduce((a, b) => a + b, 0) / count : null;
+    const meta = movieMeta(s.metadata);
     return {
       id: s.id,
       weekNumber: s.weekNumber,
       weekStart: s.weekStart.toISOString(),
       movieTitle: s.movieTitle,
+      posterUrl: meta.posterUrl,
+      trailerUrl: meta.trailerUrl,
+      offers: meta.offers,
       averageRating: average === null ? null : Math.round(average * 100) / 100,
       ratingCount: count,
       myRating: s.ratings.find((r) => r.userId === user.id)?.value ?? null,

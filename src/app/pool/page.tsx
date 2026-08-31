@@ -1,13 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { movieMeta } from "@/lib/movie-meta";
 import { PoolClient } from "@/components/PoolClient";
-
-type Offer = {
-  type: "RENT" | "BUY" | "STREAM" | "FREE";
-  provider: string;
-  price: number | null;
-  url: string;
-};
 
 export const dynamic = "force-dynamic";
 
@@ -29,19 +23,18 @@ export default async function PoolPage() {
 
       <PoolClient
         canSimulate={process.env.NODE_ENV !== "production"}
-        initialCandidates={candidates.map((c) => ({
-          id: c.id,
-          title: c.title,
-          source: c.source,
-          createdAt: c.createdAt.toISOString(),
-          posterUrl: (c.metadata as { posterUrl?: string } | null)?.posterUrl ?? null,
-          offers: ((c.metadata as { offers?: Offer[] } | null)?.offers ?? []).map((o) => ({
-            type: o.type,
-            provider: o.provider,
-            price: o.price,
-            url: o.url,
-          })),
-        }))}
+        initialCandidates={candidates.map((c) => {
+          const meta = movieMeta(c.metadata);
+          return {
+            id: c.id,
+            title: c.title,
+            source: c.source,
+            createdAt: c.createdAt.toISOString(),
+            posterUrl: meta.posterUrl,
+            trailerUrl: meta.trailerUrl,
+            offers: meta.offers,
+          };
+        })}
       />
     </div>
   );

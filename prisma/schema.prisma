@@ -112,6 +112,7 @@ model Screening {
   selectedByUserId String?
   selectedBy       User?    @relation(fields: [selectedByUserId], references: [id], onDelete: SetNull)
   votes            Int      @default(0)
+  metadata         Json?
   createdAt        DateTime @default(now())
 
   ratings Rating[]

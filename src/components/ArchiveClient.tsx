@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { StarRating } from "@/components/StarRating";
+import type { Offer } from "@/lib/movie-meta";
 
 export type ScreeningView = {
   id: string;
   weekNumber: number;
   weekStart: string;
   movieTitle: string;
+  posterUrl: string | null;
+  trailerUrl: string | null;
+  offers: Offer[];
   averageRating: number | null;
   ratingCount: number;
   myRating: number | null;
@@ -102,16 +106,54 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
           {screenings.map((s) => (
             <li
               key={s.id}
-              className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
             >
-              <div className="min-w-0">
+              {s.posterUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={s.posterUrl}
+                  alt={`${s.movieTitle} poster`}
+                  loading="lazy"
+                  className="h-[110px] w-[74px] shrink-0 self-start rounded-md border border-edge object-cover"
+                />
+              )}
+
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3">
                   <span className="rounded-md border border-accent/40 px-2 py-0.5 font-mono text-xs tracking-widest text-accent">
                     W{s.weekNumber}
                   </span>
                   <h2 className="font-display truncate text-xl">{s.movieTitle}</h2>
                 </div>
-                <div className="mt-1.5 flex items-center gap-3 pl-1 text-sm text-muted">
+
+                {s.trailerUrl && (
+                  <a
+                    href={s.trailerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 rounded-full border border-edge px-2.5 py-0.5 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+                  >
+                    ▶ Trailer
+                  </a>
+                )}
+
+                {s.offers.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {s.offers.map((o) => (
+                      <a
+                        key={`${o.provider}-${o.type}-${o.url}`}
+                        href={o.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full border border-edge px-2.5 py-0.5 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+                      >
+                        {o.provider} · {o.type.toLowerCase()}
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-2 flex items-center gap-3 pl-1 text-sm text-muted">
                   <StarRating displayValue={s.averageRating} />
                   <span>
                     {s.averageRating === null ? "No ratings yet" : `${s.averageRating.toFixed(1)}`}{" "}

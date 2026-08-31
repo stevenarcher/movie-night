@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { Wheel, type WheelHandle } from "@/components/Wheel";
+import type { Offer } from "@/lib/movie-meta";
 
-type Winner = { movieTitle: string; weekNumber: number };
+type Winner = {
+  movieTitle: string;
+  weekNumber: number;
+  posterUrl: string | null;
+  trailerUrl: string | null;
+  offers: Offer[];
+};
 
 type Candidate = { title: string; posterUrl: string | null };
 
@@ -27,7 +34,7 @@ export function WheelClient({ candidates }: { candidates: Candidate[] }) {
     if (!readyToSpin) return;
     setError(null);
 
-    let screening: { movieTitle: string; weekNumber: number };
+    let screening: Winner;
     try {
       const res = await fetch("/api/select", { method: "POST" });
       const data = await res.json();
@@ -83,28 +90,66 @@ export function WheelClient({ candidates }: { candidates: Candidate[] }) {
 
       {winner && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-edge bg-panel p-8 text-center shadow-2xl">
-            <div className="slate absolute left-0 right-0 top-4 px-8">
-              <span className="sc">TAKE 01</span>
-              <span className="nm">locked</span>
-            </div>
-            <p className="eyebrow mt-4">Week {winner.weekNumber} — picture locked</p>
-            <h2 className="font-display mt-3 text-4xl leading-tight">{winner.movieTitle}</h2>
-            <p className="mt-3 text-sm text-muted">The wheel moves on for next week.</p>
-            <div className="mt-8 flex justify-center gap-3">
-              <Link
-                href="/archive"
-                className="rounded-full bg-accent px-6 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
-              >
-                Rate it in the archive
-              </Link>
-              <button
-                type="button"
-                onClick={() => setWinner(null)}
-                className="rounded-full border border-edge px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent"
-              >
-                Close
-              </button>
+          <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-edge bg-panel shadow-2xl">
+            {winner.posterUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={winner.posterUrl}
+                alt={`${winner.movieTitle} poster`}
+                className="h-56 w-full border-b border-edge object-cover"
+              />
+            )}
+            <div className="p-8 text-center">
+              <div className="slate">
+                <span className="sc">TAKE 01</span>
+                <span className="nm">locked</span>
+              </div>
+              <p className="eyebrow mt-4">Week {winner.weekNumber} — picture locked</p>
+              <h2 className="font-display mt-3 text-4xl leading-tight">{winner.movieTitle}</h2>
+              <p className="mt-3 text-sm text-muted">The wheel moves on for next week.</p>
+
+              {winner.trailerUrl && (
+                <a
+                  href={winner.trailerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-edge px-4 py-1.5 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+                >
+                  ▶ Watch trailer
+                </a>
+              )}
+
+              {winner.offers.length > 0 && (
+                <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                  {winner.offers.map((o) => (
+                    <a
+                      key={`${o.provider}-${o.type}-${o.url}`}
+                      href={o.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-full border border-edge px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+                    >
+                      {o.provider} · {o.type.toLowerCase()}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-center gap-3">
+                <Link
+                  href="/archive"
+                  className="rounded-full bg-accent px-6 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
+                >
+                  Rate it in the archive
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setWinner(null)}
+                  className="rounded-full border border-edge px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

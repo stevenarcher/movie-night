@@ -25,7 +25,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-24 sm:py-32">
-      <p className="eyebrow mb-6">A weekly movie pick · decided by the wheel</p>
+      <p className="eyebrow mb-6">Very Critical</p>
 
       <h1 className="font-display text-center text-6xl leading-[0.95] tracking-tight sm:text-8xl">
         Movie Night<span className="text-accent">.</span>

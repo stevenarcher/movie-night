@@ -163,6 +163,36 @@ body {
   100% { transform: scale(2.6); opacity: 0; }
 }
 
+/* ---------- wheel spin flourish ---------- */
+/* pointer "rattle" — a single physical impulse fired each time a segment
+   boundary passes the pointer. The pointer is pushed anticlockwise (to the
+   left) by --rattle-ang (>=60deg, set in JS from the wheel's spin speed) past
+   the oncoming edge, then falls back to rest before the next segment. Pivots
+   around the pointer's centre circle (SVG 400x400 user units: 200,10).
+   Negative rotate() = anticlockwise, so the amplitude is negated here; the JS
+   only ever sets a positive magnitude. */
+.pointer-rattle {
+  animation: pointer-rattle 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-box: view-box;
+  transform-origin: 200px 10px;
+}
+@keyframes pointer-rattle {
+  0% { transform: rotate(calc(-1 * var(--rattle-ang, 60deg))); }
+  100% { transform: rotate(0deg); }
+}
+
+/* winning slice label when the wheel settles — a crisp scale pulse */
+.winner-pop {
+  animation: winner-pop 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes winner-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
 ::selection {
   background: var(--mint);
   color: var(--void);
@@ -182,7 +212,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .grain,
-  .rec-dot::after {
+  .rec-dot::after,
+  .pointer-rattle,
+  .winner-pop {
     animation: none;
   }
 }

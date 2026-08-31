@@ -1,24 +1,50 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 const CX = 200;
 const CY = 200;
 const R = 190;
 
+const WHEEL_EASING = cubicBezier(0.12, 0.8, 0.15, 1);
+
+/* Numeric solver for href-less cubic-bezier(x1,y1,x2,y2): maps progress x in [0,1]
+   to eased output y. Used in the rAF spin loop so per-frame angle & velocity match
+   the final segment landing exactly. */
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  const sampleX = (t: number) =>
+    3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+  const sampleY = (t: number) =>
+    3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+  const sampleDX = (t: number) =>
+    3 * (1 - t) * (1 - t) * x1 + 6 * (1 - t) * t * (x2 - x1) + 3 * t * t * (1 - x2);
+  return (x: number): number => {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 12; i++) {
+      const err = sampleX(t) - x;
+      if (Math.abs(err) < 1e-6) break;
+      const d = sampleDX(t);
+      if (d === 0) break;
+      t -= err / d;
+    }
+    return sampleY(t);
+  };
+}
 const PALETTE = [
-  "#0d7f52",
-  "#02df82",
-  "#0b5c48",
-  "#46e8a3",
-  "#0a3d34",
-  "#02c877",
-  "#7af0bd",
-  "#0f5f3f",
-  "#2ce9a0",
-  "#083a2a",
-  "#0aa968",
-  "#3fe3a5",
+  "#4c6b84",
+  "#2b9d8c",
+  "#e6c15a",
+  "#f4a261",
+  "#e76f51",
+  "#c23a55",
+  "#86bc4d",
+  "#a6d9b4",
+  "#7a5c9e",
+  "#e87aa6",
+  "#3aa6b9",
+  "#d6b73f",
 ];
 
 function polar(cx: number, cy: number, r: number, angleDeg: number): [number, number] {
@@ -47,9 +73,20 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
   ref,
 ) {
   const [rotation, setRotation] = useState(0);
-  const [spinning, setSpinning] = useState(false);
+  const [winnerIndex, setWinnerIndex] = useState<number | null>(null);
   const promiseRef = useRef<{ resolve: () => void } | null>(null);
   const timedOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const winnerRef = useRef<number | null>(null);
+  const pointerRef = useRef<SVGGElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const lastSliceRef = useRef<number>(-1);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (timedOutRef.current) clearTimeout(timedOutRef.current);
+    };
+  }, []);
 
   const total = segments.length;
   const sweep = total > 0 ? 360 / total : 360;
@@ -72,8 +109,24 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
       clearTimeout(timedOutRef.current);
       timedOutRef.current = null;
     }
-    setSpinning(false);
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    lastSliceRef.current = -1;
+    setWinnerIndex(winnerRef.current);
     res?.resolve();
+  }
+
+  /* One physical impulse: kick the pointer toward the oncoming segment edge
+     (proportional to the wheel's current speed), then let it spring back. */
+  function rattle(ampDeg: number) {
+    const el = pointerRef.current;
+    if (!el || ampDeg < 0.3) return;
+    el.style.setProperty("--rattle-ang", `${ampDeg.toFixed(2)}deg`);
+    el.classList.remove("pointer-rattle");
+    void el.getBoundingClientRect();
+    el.classList.add("pointer-rattle");
   }
 
   useImperativeHandle(
@@ -89,25 +142,66 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
         const advance = shift - base;
         const nextRotation = rotation + minRevolutions * 360 + (advance >= 0 ? advance : advance + 360);
 
-        setSpinning(true);
-        setRotation(nextRotation);
+        setRotation(rotation);
+        winnerRef.current = index;
+        setWinnerIndex(null);
 
         return new Promise<void>((resolve) => {
           promiseRef.current = { resolve };
-          // Safety net in case transitionend never fires.
           timedOutRef.current = setTimeout(finish, SPIN_DURATION_MS + 500);
+
+          // Reduced-motion users get an instant settle, no animation.
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setRotation(nextRotation);
+            finish();
+            return;
+          }
+
+          const from = rotation;
+          const delta = nextRotation - from;
+          const start = performance.now();
+          lastSliceRef.current = -1;
+          let prevAngle = from;
+          let prevTime = start;
+
+          const frame = (now: number) => {
+            const p = Math.min(1, (now - start) / SPIN_DURATION_MS);
+            const eased = WHEEL_EASING(p);
+            const angle = p >= 1 ? nextRotation : from + delta * eased;
+            setRotation(angle);
+
+            const dtSec = Math.max(0.001, (now - prevTime) / 1000);
+            const velocity = (angle - prevAngle) / dtSec;
+            prevAngle = angle;
+            prevTime = now;
+
+            // Current slice sitting under the fixed top pointer.
+            const aTop = ((-90 - angle) % 360 + 360) % 360;
+            const j = Math.floor((aTop + 90) / sweep) % total;
+            if (j !== lastSliceRef.current && p > 0 && p < 1) {
+              lastSliceRef.current = j;
+              // Push the pointer at least 60° anticlockwise (the CSS keyframe negates this
+              // positive magnitude), with a speed bonus — min 60°, cap at 84°.
+              rattle(Math.min(84, 60 + Math.abs(velocity) / 600));
+            }
+
+            if (p < 1) {
+              rafRef.current = requestAnimationFrame(frame);
+            } else {
+              finish();
+            }
+          };
+          rafRef.current = requestAnimationFrame(frame);
         });
       },
     }),
-    [slices, rotation],
+    [slices, rotation, sweep, total],
   );
 
   const rotationStyle = {
     transform: `rotate(${rotation}deg)`,
     transformOrigin: "200px 200px",
-    transition: spinning
-      ? `transform ${SPIN_DURATION_MS}ms cubic-bezier(0.12, 0.8, 0.15, 1)`
-      : "none",
+    transition: "none",
   };
 
   return (
@@ -117,10 +211,10 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
       <span className="vf-corner tr" aria-hidden="true" />
       <span className="vf-corner bl" aria-hidden="true" />
       <span className="vf-corner br" aria-hidden="true" />
-      {/* Shared 400x400 coordinate box for both the poster wedges and the SVG,
+      {/* Shared 400x400 coordinate box for the wedge fills and the SVG,
           scaled up together on sm so they never fall out of alignment. */}
       <div className="relative h-[400px] w-[400px] shrink-0 sm:scale-[1.15]">
-        {/* Poster wedge layer — blurred poster (or palette) fills each segment via the slice path. */}
+        {/* Wedge colour layer — a solid palette colour fills each segment via the slice path. */}
         <div className="absolute inset-0" style={rotationStyle} aria-hidden="true">
           {slices.map((s, i) => (
             <div
@@ -129,9 +223,6 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
                 position: "absolute",
                 inset: 0,
                 backgroundColor: PALETTE[i % PALETTE.length],
-                backgroundImage: s.posterUrl ? `url(${s.posterUrl})` : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
                 clipPath: `path("${s.path}")`,
                 pointerEvents: "none",
               }}
@@ -142,17 +233,19 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
         <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full drop-shadow-[0_20px_50px_rgba(0,0,0,0.55)]">
           <g
             style={rotationStyle}
-            onTransitionEnd={() => {
-              if (timedOutRef.current) {
-                finish();
-              }
-            }}
           >
             {slices.map((s, i) => (
               <path key={`${s.title}-${i}`} d={s.path} fill="none" stroke="#050706" strokeWidth="2" />
             ))}
             {total <= 28 &&
-              slices.map((s, i) => <Label key={`label-${s.title}-${i}`} midDeg={s.midDeg} title={s.title} />)}
+              slices.map((s, i) => (
+                <Label
+                  key={`label-${s.title}-${i}`}
+                  midDeg={s.midDeg}
+                  title={s.title}
+                  winning={winnerIndex === i}
+                />
+              ))}
           </g>
 
           <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(237,241,236,0.22)" strokeWidth="6" />
@@ -173,7 +266,7 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
             MN
           </text>
 
-          <g>
+          <g ref={pointerRef}>
             <path d={`M ${CX - 16} 6 L ${CX + 16} 6 L ${CX} 42 Z`} fill="#02df82" />
             <circle cx={CX} cy={10} r="7" fill="#050706" stroke="#02df82" strokeWidth="3" />
           </g>
@@ -226,7 +319,7 @@ function wrapTitle(title: string, maxChars: number): string[] {
   return result.length ? result : [title.slice(0, maxChars - 1) + "…"];
 }
 
-function Label({ midDeg, title }: { midDeg: number; title: string }) {
+function Label({ midDeg, title, winning }: { midDeg: number; title: string; winning?: boolean }) {
   const outerR = R - 14;
   const angleRad = ((midDeg - 90) * Math.PI) / 180;
   const px = CX + outerR * Math.cos(angleRad);
@@ -241,6 +334,7 @@ function Label({ midDeg, title }: { midDeg: number; title: string }) {
   return (
     <g transform={`translate(${px} ${py}) rotate(${tangentDeg})`}>
       <rect
+        className={winning ? "winner-pop" : undefined}
         x={-padX}
         y={-bodyH / 2 - 5}
         width={maxWidth + padX * 2}

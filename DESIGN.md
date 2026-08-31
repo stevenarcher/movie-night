@@ -45,6 +45,10 @@ not in decorative excess. Readability and the server-flow (roll → lock → arc
 
 - **Mint is the only accent.** No rose, amber, or blue. Interactive states shift
   accent → `accent-2`. Do not reintroduce a second accent.
+- **The wheel is the one sanctioned exception.** Its wedges carry a vivid multi-hue palette
+  (blue, teal, gold, orange, coral, magenta, green, mint) inspired by the spinning-wheel
+  reference — the wheel is the colorful instrument/centerpiece. Mint remains the accent for its
+  frame, hub, pointer, and every accent elsewhere in the app.
 - Headlines are `font-display` (Instrument Serif); buttons are uppercase Space Grotesk with
   wide letterspacing (`text-[11px] uppercase tracking-[0.2em]`); micro-numbers are `font-mono`.
 - Surfaces are separated by `border-edge` hairlines on `bg-panel`, not heavy shadows or fills.

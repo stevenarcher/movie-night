@@ -13,10 +13,10 @@ export function StarRating({ value = 0, onChange, displayValue, interactive = fa
   if (!interactive) {
     const pct = displayValue == null ? 0 : Math.max(0, Math.min(1, displayValue / 5)) * 100;
     return (
-      <span className="relative inline-block leading-none text-white/20" aria-label={`${displayValue ?? "–"} out of 5`}>
+      <span className="relative inline-block leading-none text-bone-dim" aria-label={`${displayValue ?? "–"} out of 5`}>
         {"★★★★★"}
         <span
-          className="absolute inset-0 overflow-hidden whitespace-nowrap text-amber-400"
+          className="absolute inset-0 overflow-hidden whitespace-nowrap text-accent"
           style={{ width: `${pct}%` }}
           aria-hidden="true"
         >
@@ -37,7 +37,7 @@ export function StarRating({ value = 0, onChange, displayValue, interactive = fa
           aria-label={`${star} star${star === 1 ? "" : "s"}`}
           onClick={() => onChange?.(star)}
           className={`text-xl transition-transform hover:scale-125 ${
-            star <= value ? "text-amber-400" : "text-white/20 hover:text-white/40"
+            star <= value ? "text-accent" : "text-bone-dim hover:text-accent/60"
           }`}
         >
           ★

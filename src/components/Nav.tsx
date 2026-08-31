@@ -11,21 +11,24 @@ export async function Nav() {
   const initials = (user?.name ?? "?").slice(0, 2).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-edge/60 bg-background/70 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
-        <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="text-accent">🎬</span> Movie Night
+        <Link href="/" className="flex items-center gap-3">
+          <span className="rec-dot" aria-hidden="true" />
+          <span className={`font-display text-lg tracking-tight text-foreground`}>
+            Movie<span className="text-accent">Night</span>
+          </span>
         </Link>
 
         {user && (
-          <nav className="flex items-center gap-4 text-sm">
-            <Link href="/wheel" className="text-muted hover:text-foreground transition-colors">
+          <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.24em]">
+            <Link href="/wheel" className="text-muted transition-colors hover:text-accent">
               Spin
             </Link>
-            <Link href="/pool" className="text-muted hover:text-foreground transition-colors">
+            <Link href="/pool" className="text-muted transition-colors hover:text-accent">
               Pool
             </Link>
-            <Link href="/archive" className="text-muted hover:text-foreground transition-colors">
+            <Link href="/archive" className="text-muted transition-colors hover:text-accent">
               Archive
             </Link>
           </nav>
@@ -36,14 +39,14 @@ export async function Nav() {
             <>
               {user.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full" />
+                <img src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
               ) : (
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/20 text-xs font-bold text-accent">
+                <span className="grid h-8 w-8 place-items-center rounded-full border border-accent/50 text-[11px] font-medium text-accent">
                   {initials}
                 </span>
               )}
               <div className="hidden sm:block text-right leading-tight">
-                <p className="text-sm font-medium">{user.name}</p>
+                <p className="text-xs text-muted uppercase tracking-[0.18em]">{user.name}</p>
               </div>
               <SignOutButton />
             </>

@@ -133,7 +133,7 @@ export function PoolClient({
     <div className="flex flex-col gap-6">
       <form
         onSubmit={addMovie}
-        className="flex flex-col gap-3 rounded-2xl border border-edge bg-panel p-4 sm:flex-row"
+        className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row"
       >
         <input
           type="text"
@@ -141,12 +141,12 @@ export function PoolClient({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Suggest a movie title…"
           maxLength={80}
-          className="min-w-0 flex-1 rounded-xl border border-edge bg-background px-4 py-2.5 text-sm outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
+          className="min-w-0 flex-1 rounded-lg border border-edge bg-background px-4 py-2.5 text-sm font-light outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 placeholder:text-bone-dim"
         />
         <div className="flex gap-2">
           <button
             type="submit"
-            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 transition-colors"
+            className="rounded-lg bg-accent px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
           >
             Add to pool
           </button>
@@ -155,25 +155,25 @@ export function PoolClient({
               type="button"
               onClick={injectWhatsAppMessage}
               disabled={injecting}
-              className="rounded-xl border border-edge px-3 py-2.5 text-sm font-medium text-muted hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+              className="rounded-lg border border-edge px-3 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent disabled:opacity-50"
               title="Dev only: pushes a fake WhatsApp group message through the real ingest pipeline"
             >
-              {injecting ? "Injecting…" : "😷 Inject test WhatsApp msg"}
+              {injecting ? "Injecting" : "😷 Inject test msg"}
             </button>
           )}
         </div>
       </form>
 
       {error && (
-        <p className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-2 text-sm text-accent-2">
+        <p className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm text-accent-2">
           {error}
         </p>
       )}
 
       {candidates.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-edge bg-panel-2 p-10 text-center text-muted">
-          <p className="text-3xl">🍿</p>
-          <p className="mt-2">No movies in the pool yet.</p>
+        <div className="rounded-xl border border-dashed border-edge bg-panel-2 p-14 text-center text-muted">
+          <p className="font-display text-3xl italic">Dead reel</p>
+          <p className="mt-2 text-sm">No movies in the pool yet.</p>
           <p className="text-sm">Add one above, or wire up the WhatsApp webhook.</p>
         </div>
       ) : (
@@ -181,7 +181,7 @@ export function PoolClient({
           {candidates.map((c) => (
             <li
               key={c.id}
-              className="flex gap-4 rounded-2xl border border-edge bg-panel p-4"
+              className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
             >
               {c.posterUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -189,15 +189,15 @@ export function PoolClient({
                   src={c.posterUrl}
                   alt={`${c.title} poster`}
                   loading="lazy"
-                  className="h-[128px] w-[85px] shrink-0 self-start rounded-lg object-cover"
+                  className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-edge object-cover"
                 />
               )}
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{c.title}</p>
-                    <p className="text-xs text-muted">
+                    <p className="font-display truncate text-xl">{c.title}</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted">
                       {c.source === "WHATSAPP" ? "via WhatsApp" : "manual"} ·{" "}
                       {new Date(c.createdAt).toLocaleDateString()}
                     </p>
@@ -205,7 +205,7 @@ export function PoolClient({
                   <button
                     type="button"
                     onClick={() => removeMovie(c.id)}
-                    className="rounded-lg px-2 py-1 text-sm text-muted hover:bg-white/5 hover:text-foreground transition-colors"
+                    className="rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-white/5 hover:text-accent"
                     title="Remove from pool"
                   >
                     ✕
@@ -220,12 +220,12 @@ export function PoolClient({
                         href={o.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/60 hover:text-foreground"
                       >
-                        <span className="rounded bg-background px-1 py-0.5 font-mono text-[10px] uppercase tracking-wide">
+                        <span className="rounded bg-panel-2 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
                           {TYPE_LABEL[o.type] ?? o.type}
                         </span>
-                        <span className="font-medium">{o.provider}</span>
+                        <span>{o.provider}</span>
                         <span className="text-foreground">{formatPrice(o.price)}</span>
                       </a>
                     ))}

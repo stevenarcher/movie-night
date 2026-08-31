@@ -76,31 +76,32 @@ export function WheelClient({ candidates }: { candidates: Candidate[] }) {
         type="button"
         onClick={spin}
         disabled={!readyToSpin}
-        className="rounded-full bg-accent px-10 py-3.5 text-base font-bold text-white shadow-lg shadow-accent/30 transition-all hover:bg-accent/90 hover:shadow-accent/40 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+        className="rounded-full bg-accent px-12 py-4 text-sm font-medium uppercase tracking-[0.2em] text-background shadow-[0_0_40px_rgba(2,223,130,0.35)] transition-all hover:bg-accent-2 hover:shadow-[0_0_55px_rgba(2,223,130,0.5)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
       >
-        {spinning ? "Spinning…" : "Spin the wheel"}
+        {spinning ? "Spinning" : "Spin the wheel"}
       </button>
 
       {winner && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl border border-edge bg-panel p-8 text-center shadow-2xl">
-            <p className="text-4xl">🎉</p>
-            <p className="mt-3 text-sm uppercase tracking-widest text-muted">
-              Week {winner.weekNumber} — here&apos;s the movie
-            </p>
-            <h2 className="mt-2 text-3xl font-black">{winner.movieTitle}</h2>
-            <p className="mt-2 text-sm text-muted">Locked in. The wheel moves on for next week.</p>
-            <div className="mt-6 flex justify-center gap-3">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-edge bg-panel p-8 text-center shadow-2xl">
+            <div className="slate absolute left-0 right-0 top-4 px-8">
+              <span className="sc">TAKE 01</span>
+              <span className="nm">locked</span>
+            </div>
+            <p className="eyebrow mt-4">Week {winner.weekNumber} — picture locked</p>
+            <h2 className="font-display mt-3 text-4xl leading-tight">{winner.movieTitle}</h2>
+            <p className="mt-3 text-sm text-muted">The wheel moves on for next week.</p>
+            <div className="mt-8 flex justify-center gap-3">
               <Link
                 href="/archive"
-                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-accent/90 transition-colors"
+                className="rounded-full bg-accent px-6 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
               >
                 Rate it in the archive
               </Link>
               <button
                 type="button"
                 onClick={() => setWinner(null)}
-                className="rounded-full border border-edge px-5 py-2.5 text-sm font-medium text-muted hover:text-foreground transition-colors"
+                className="rounded-full border border-edge px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent"
               >
                 Close
               </button>

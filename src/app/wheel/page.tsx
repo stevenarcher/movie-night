@@ -19,11 +19,11 @@ export default async function WheelPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8 text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted">Week {week.weekNumber}</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">Spin the wheel</h1>
-        <p className="mt-2 text-muted">
+    <div className="mx-auto max-w-3xl px-4 py-16">
+      <div className="mb-12 text-center">
+        <p className="eyebrow-accent mb-4">WK {week.weekNumber} · PICTURE START</p>
+        <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Spin the wheel</h1>
+        <p className="mt-5 mx-auto max-w-md text-muted">
           The server picks the winner at random, the wheel settles on it, and the movie is locked
           for the week.
         </p>
@@ -45,11 +45,15 @@ export default async function WheelPage() {
 
 function LockedPanel({ movieTitle, weekNumber }: { movieTitle: string; weekNumber: number }) {
   return (
-    <div className="mx-auto max-w-md rounded-3xl border border-edge bg-panel p-10 text-center">
-      <p className="text-5xl">🎬</p>
-      <p className="mt-4 text-sm text-muted">Week {weekNumber} is already locked in —</p>
-      <p className="mt-2 text-2xl font-bold">{movieTitle}</p>
-      <p className="mt-6 text-sm text-muted">
+    <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-edge bg-panel p-10 text-center">
+      <div className="text-4xl">🎬</div>
+      <div className="slate mt-6">
+        <span className="sc">TAKE 01</span>
+        <span className="nm">locked</span>
+      </div>
+      <p className="eyebrow mt-8">Week {weekNumber} is already locked in</p>
+      <h2 className="font-display mt-3 text-3xl leading-tight">{movieTitle}</h2>
+      <p className="mt-5 text-sm text-muted">
         The wheel waits for next week. Everyone can rate the pick in the archive.
       </p>
       <ResetSpinButton movieTitle={movieTitle} />

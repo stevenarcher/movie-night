@@ -7,7 +7,7 @@ export function SignInButton({ label = "Sign in with Google" }: { label?: string
     <button
       type="button"
       onClick={() => signIn("google", { callbackUrl: "/wheel" })}
-      className="inline-flex items-center gap-2 rounded-full bg-white text-slate-900 px-4 py-2 text-sm font-semibold shadow hover:bg-slate-100 transition-colors"
+      className="inline-flex items-center gap-2.5 rounded-full border border-accent/50 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-background"
     >
       <GoogleIcon />
       {label}

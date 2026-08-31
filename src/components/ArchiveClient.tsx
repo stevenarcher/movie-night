@@ -83,18 +83,18 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
       {(top.length > 0 || bottom.length > 0) && (
         <section className="grid gap-4 sm:grid-cols-2">
           {top.length > 0 && (
-            <RankingCard title="🏆 Top picks" rows={top} />
+            <RankingCard title="Top picks" rows={top} />
           )}
           {bottom.length > 0 && (
-            <RankingCard title="🍿 Bottom of the heap" rows={bottom} />
+            <RankingCard title="Bottom of the heap" rows={bottom} />
           )}
         </section>
       )}
 
       {screenings.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-edge bg-panel-2 p-10 text-center text-muted">
-          <p className="text-3xl">🎞️</p>
-          <p className="mt-2">No movies have been selected yet.</p>
+        <div className="rounded-xl border border-dashed border-edge bg-panel-2 p-14 text-center text-muted">
+          <p className="font-display text-3xl italic">The reel is empty</p>
+          <p className="mt-2 text-sm">No movies have been selected yet.</p>
           <p className="text-sm">Spin the wheel to make your first pick.</p>
         </div>
       ) : (
@@ -102,14 +102,14 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
           {screenings.map((s) => (
             <li
               key={s.id}
-              className="flex flex-col gap-3 rounded-2xl border border-edge bg-panel p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <span className="rounded-lg bg-accent/15 px-2 py-0.5 font-mono text-xs font-semibold text-accent">
+                  <span className="rounded-md border border-accent/40 px-2 py-0.5 font-mono text-xs tracking-widest text-accent">
                     W{s.weekNumber}
                   </span>
-                  <h2 className="truncate text-lg font-bold">{s.movieTitle}</h2>
+                  <h2 className="font-display truncate text-xl">{s.movieTitle}</h2>
                 </div>
                 <div className="mt-1.5 flex items-center gap-3 pl-1 text-sm text-muted">
                   <StarRating displayValue={s.averageRating} />
@@ -122,7 +122,7 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
 
               <div className="flex items-center gap-3 pl-1 sm:flex-col sm:items-end sm:gap-1">
                 <StarRating value={s.myRating ?? 0} onChange={(v) => rate(s.id, v)} interactive />
-                <p className="text-xs text-muted">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
                   {saving === s.id ? "Saving…" : s.myRating ? "Your rating" : "Tap to rate"}
                 </p>
               </div>
@@ -136,16 +136,18 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
 
 function RankingCard({ title, rows }: { title: string; rows: RankingView[] }) {
   return (
-    <div className="rounded-2xl border border-edge bg-panel p-5">
-      <h2 className="font-semibold">{title}</h2>
-      <ol className="mt-3 flex flex-col gap-2">
+    <div className="overflow-hidden rounded-xl border border-edge bg-panel">
+      <div className="border-b border-edge px-5 py-4">
+        <h2 className="font-display text-2xl">{title}</h2>
+      </div>
+      <ol className="flex flex-col gap-1 p-5 pt-4">
         {rows.map((r, i) => (
-          <li key={r.name} className="flex items-center justify-between text-sm">
-            <span className="min-w-0 truncate">
-              <span className="mr-2 font-mono text-xs text-muted">{i + 1}.</span>
-              {r.name}
+          <li key={r.name} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+            <span className="min-w-0 flex items-center gap-3">
+              <span className="font-mono text-xs tracking-widest text-muted">{i + 1}.</span>
+              <span className="min-w-0 truncate">{r.name}</span>
             </span>
-            <span className="ml-3 shrink-0 font-medium text-amber-400">{r.average.toFixed(1)}</span>
+            <span className="shrink-0 font-mono text-xs tracking-widest text-accent">{r.average.toFixed(1)}</span>
           </li>
         ))}
       </ol>

@@ -36,10 +36,11 @@ export default async function ArchivePage() {
   const rankings = await computeRankings();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Movie archive</h1>
-        <p className="mt-2 text-muted">
+    <div className="mx-auto max-w-3xl px-4 py-16">
+      <div className="mb-10">
+        <p className="eyebrow-accent mb-4">PAST PICKS · RATED</p>
+        <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Movie archive</h1>
+        <p className="mt-5 max-w-xl text-muted">
           Every weekly pick, with the group&apos;s ratings. Rate your favourite nights on a 1–5
           scale.
         </p>

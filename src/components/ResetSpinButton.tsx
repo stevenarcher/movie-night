@@ -38,7 +38,7 @@ export function ResetSpinButton({ movieTitle }: { movieTitle: string }) {
         type="button"
         onClick={reset}
         disabled={busy}
-        className="rounded-full border border-edge px-5 py-2.5 text-sm font-medium text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-full border border-edge px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? "Resetting…" : "Reset this week's spin"}
       </button>

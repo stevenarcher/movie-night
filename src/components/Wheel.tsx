@@ -7,18 +7,18 @@ const CY = 200;
 const R = 190;
 
 const PALETTE = [
-  "#f43f5e",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-  "#6366f1",
-  "#84cc16",
-  "#06b6d4",
-  "#d946ef",
+  "#0d7f52",
+  "#02df82",
+  "#0b5c48",
+  "#46e8a3",
+  "#0a3d34",
+  "#02c877",
+  "#7af0bd",
+  "#0f5f3f",
+  "#2ce9a0",
+  "#083a2a",
+  "#0aa968",
+  "#3fe3a5",
 ];
 
 function polar(cx: number, cy: number, r: number, angleDeg: number): [number, number] {
@@ -112,6 +112,11 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
 
   return (
     <div className="relative mx-auto flex h-[400px] w-[400px] items-center justify-center select-none sm:h-[460px] sm:w-[460px]">
+      {/* Viewfinder framing brackets */}
+      <span className="vf-corner tl" aria-hidden="true" />
+      <span className="vf-corner tr" aria-hidden="true" />
+      <span className="vf-corner bl" aria-hidden="true" />
+      <span className="vf-corner br" aria-hidden="true" />
       {/* Shared 400x400 coordinate box for both the poster wedges and the SVG,
           scaled up together on sm so they never fall out of alignment. */}
       <div className="relative h-[400px] w-[400px] shrink-0 sm:scale-[1.15]">
@@ -144,24 +149,33 @@ export const Wheel = forwardRef<WheelHandle, { segments: WheelSegment[] }>(funct
             }}
           >
             {slices.map((s, i) => (
-              <path key={`${s.title}-${i}`} d={s.path} fill="none" stroke="#0b0f1a" strokeWidth="2" />
+              <path key={`${s.title}-${i}`} d={s.path} fill="none" stroke="#050706" strokeWidth="2" />
             ))}
             {total <= 28 &&
               slices.map((s, i) => <Label key={`label-${s.title}-${i}`} midDeg={s.midDeg} title={s.title} />)}
           </g>
 
-          <circle cx={CX} cy={CY} r={R} fill="none" stroke="#2b3a57" strokeWidth="6" />
-          <circle cx={CX} cy={CY} r={R - 12} fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth="1" />
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(237,241,236,0.22)" strokeWidth="6" />
+          <circle cx={CX} cy={CY} r={R - 12} fill="none" stroke="rgba(237,241,236,0.1)" strokeWidth="1" />
 
-          <circle cx={CX} cy={CY} r="46" fill="#121a2b" stroke="#2b3a57" strokeWidth="4" />
-          <circle cx={CX} cy={CY} r="30" fill="#1c2740" />
-          <text x={CX} y={CY + 2} textAnchor="middle" dominantBaseline="middle" className="fill-white" fontSize="26">
-            🎬
+          <circle cx={CX} cy={CY} r="46" fill="#0a0e0c" stroke="rgba(237,241,236,0.22)" strokeWidth="4" />
+          <circle cx={CX} cy={CY} r="30" fill="#050706" stroke="rgba(237,241,236,0.14)" strokeWidth="1" />
+          <text
+            x={CX}
+            y={CY + 1}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-accent"
+            fontFamily="var(--font-instrument-serif), serif"
+            fontStyle="italic"
+            fontSize="30"
+          >
+            MN
           </text>
 
           <g>
-            <path d={`M ${CX - 16} 6 L ${CX + 16} 6 L ${CX} 42 Z`} fill="#f43f5e" />
-            <circle cx={CX} cy={10} r="7" fill="#0b0f1a" stroke="#f43f5e" strokeWidth="3" />
+            <path d={`M ${CX - 16} 6 L ${CX + 16} 6 L ${CX} 42 Z`} fill="#02df82" />
+            <circle cx={CX} cy={10} r="7" fill="#050706" stroke="#02df82" strokeWidth="3" />
           </g>
         </svg>
       </div>

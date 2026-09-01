@@ -47,8 +47,8 @@ export default async function ArchivePage() {
         <p className="eyebrow-accent mb-4">PAST PICKS · RATED</p>
         <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Movie archive</h1>
         <p className="mt-5 max-w-xl text-muted">
-          Every weekly pick, with the group&apos;s ratings. Rate your favourite nights on a 1–5
-          scale.
+          Every weekly pick, with the group&apos;s ratings. Rate your favourite nights on a 0–5
+          scale, in quarter-star increments.
         </p>
       </div>
 

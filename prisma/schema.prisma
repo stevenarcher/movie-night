@@ -121,12 +121,12 @@ model Screening {
   @@index([createdAt])
 }
 
-/// A 1–5 star rating of a past Screening, unique per (user, screening).
+/// A 0–5 star rating (in 0.25 increments) of a past Screening, unique per (user, screening).
 model Rating {
   id          String   @id @default(cuid())
   userId      String
   screeningId String
-  value       Int
+  value       Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

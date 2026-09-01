@@ -163,7 +163,13 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
               </div>
 
               <div className="flex items-center gap-3 pl-1 sm:flex-col sm:items-end sm:gap-1">
-                <StarRating value={s.myRating ?? 0} onChange={(v) => rate(s.id, v)} interactive />
+                <StarRating
+                  key={s.myRating ?? 0}
+                  value={s.myRating ?? 0}
+                  onSubmit={(v) => rate(s.id, v)}
+                  pending={saving === s.id}
+                  interactive
+                />
                 <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
                   {saving === s.id ? "Saving…" : s.myRating ? "Your rating" : "Tap to rate"}
                 </p>

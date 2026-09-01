@@ -14,7 +14,7 @@ export async function Nav() {
     <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
         <Link href="/" className="flex items-center gap-3">
-          <span className="rec-dot" aria-hidden="true" />
+          <span className="rec-dot" aria-hidden="true" />VC
           <span className={`font-display text-lg tracking-tight text-foreground`}>
             Movie<span className="text-accent">Night</span>
           </span>

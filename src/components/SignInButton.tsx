@@ -2,11 +2,17 @@
 
 import { signIn } from "next-auth/react";
 
-export function SignInButton({ label = "Sign in with Google" }: { label?: string }) {
+export function SignInButton({
+  label = "Sign in with Google",
+  callbackUrl = "/wheel",
+}: {
+  label?: string;
+  callbackUrl?: string;
+}) {
   return (
     <button
       type="button"
-      onClick={() => signIn("google", { callbackUrl: "/wheel" })}
+      onClick={() => signIn("google", { callbackUrl })}
       className="inline-flex items-center gap-2.5 rounded-full border border-accent/50 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-background"
     >
       <GoogleIcon />

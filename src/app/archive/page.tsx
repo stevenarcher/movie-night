@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/session";
+import { currentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { movieMeta } from "@/lib/movie-meta";
 import { ArchiveClient, type RankingView, type ScreeningView } from "@/components/ArchiveClient";
@@ -6,7 +6,7 @@ import { ArchiveClient, type RankingView, type ScreeningView } from "@/component
 export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
-  const user = await requireUser();
+  const user = await currentUser();
 
   const screenings = await prisma.screening.findMany({
     orderBy: { weekNumber: "desc" },
@@ -35,7 +35,7 @@ export default async function ArchivePage() {
       offers: meta.offers,
       averageRating: average === null ? null : Math.round(average * 100) / 100,
       ratingCount: count,
-      myRating: s.ratings.find((r) => r.userId === user.id)?.value ?? null,
+      myRating: user ? s.ratings.find((r) => r.userId === user.id)?.value ?? null : null,
     };
   });
 
@@ -52,7 +52,11 @@ export default async function ArchivePage() {
         </p>
       </div>
 
-      <ArchiveClient initialScreenings={views} rankings={rankings} />
+      <ArchiveClient
+        signedIn={Boolean(user)}
+        initialScreenings={views}
+        rankings={rankings}
+      />
     </div>
   );
 }

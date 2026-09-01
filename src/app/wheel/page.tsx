@@ -1,14 +1,16 @@
-import { requireUser } from "@/lib/session";
+import { currentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
 import { movieMeta, type MovieMeta } from "@/lib/movie-meta";
 import { WheelClient } from "@/components/WheelClient";
 import { ResetSpinButton } from "@/components/ResetSpinButton";
+import { SignInPrompt } from "@/components/SignInPrompt";
 
 export const dynamic = "force-dynamic";
 
 export default async function WheelPage() {
-  await requireUser();
+  const user = await currentUser();
+  const signedIn = Boolean(user);
 
   const week = currentWeek();
   const [candidates, locked] = await Promise.all([
@@ -32,12 +34,14 @@ export default async function WheelPage() {
 
       {locked ? (
         <LockedPanel
+          signedIn={signedIn}
           movieTitle={locked.movieTitle}
           weekNumber={locked.weekNumber}
           meta={movieMeta(locked.metadata)}
         />
       ) : (
         <WheelClient
+          signedIn={signedIn}
           candidates={candidates.map((c) => ({
             title: c.title,
             posterUrl: movieMeta(c.metadata).posterUrl,
@@ -49,10 +53,12 @@ export default async function WheelPage() {
 }
 
 function LockedPanel({
+  signedIn,
   movieTitle,
   weekNumber,
   meta,
 }: {
+  signedIn: boolean;
   movieTitle: string;
   weekNumber: number;
   meta: MovieMeta;
@@ -107,7 +113,15 @@ function LockedPanel({
         )}
 
         <div className="mt-8">
-          <ResetSpinButton movieTitle={movieTitle} />
+          {signedIn ? (
+            <ResetSpinButton movieTitle={movieTitle} />
+          ) : (
+            <SignInPrompt
+              message="Resetting the week's pick requires signing in. Sign in and you can return this movie to the pool or watch the trailer above."
+              label="Sign in to unlock this week"
+              callbackUrl="/wheel"
+            />
+          )}
         </div>
       </div>
     </div>

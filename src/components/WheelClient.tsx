@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { Wheel, type WheelHandle } from "@/components/Wheel";
+import { SignInPrompt } from "@/components/SignInPrompt";
 import type { Offer } from "@/lib/movie-meta";
 
 type Winner = {
@@ -15,13 +16,13 @@ type Winner = {
 
 type Candidate = { title: string; posterUrl: string | null };
 
-export function WheelClient({ candidates }: { candidates: Candidate[] }) {
+export function WheelClient({ signedIn, candidates }: { signedIn: boolean; candidates: Candidate[] }) {
   const wheelRef = useRef<WheelHandle>(null);
   const [winner, setWinner] = useState<Winner | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const readyToSpin = candidates.length >= 2 && !spinning && !winner;
+  const readyToSpin = signedIn && candidates.length >= 2 && !spinning && !winner;
 
   const fireConfetti = useCallback(async () => {
     const confetti = (await import("canvas-confetti")).default;
@@ -79,14 +80,22 @@ export function WheelClient({ candidates }: { candidates: Candidate[] }) {
         </p>
       ) : null}
 
-      <button
-        type="button"
-        onClick={spin}
-        disabled={!readyToSpin}
-        className="rounded-full bg-accent px-12 py-4 text-sm font-medium uppercase tracking-[0.2em] text-background shadow-[0_0_40px_rgba(2,223,130,0.35)] transition-all hover:bg-accent-2 hover:shadow-[0_0_55px_rgba(2,223,130,0.5)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-      >
-        {spinning ? "Spinning" : "Spin the wheel"}
-      </button>
+      {signedIn ? (
+        <button
+          type="button"
+          onClick={spin}
+          disabled={!readyToSpin}
+          className="rounded-full bg-accent px-12 py-4 text-sm font-medium uppercase tracking-[0.2em] text-background shadow-[0_0_40px_rgba(2,223,130,0.35)] transition-all hover:bg-accent-2 hover:shadow-[0_0_55px_rgba(2,223,130,0.5)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+        >
+          {spinning ? "Spinning" : "Spin the wheel"}
+        </button>
+      ) : (
+        <SignInPrompt
+          message="The wheel is read-only when you're signed out. Sign in to lock in this week's pick."
+          label="Sign in to spin the wheel"
+          callbackUrl="/wheel"
+        />
+      )}
 
       {winner && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm">

@@ -37,9 +37,11 @@ Use **pnpm** (pnpm@10.21.0). New native deps trigger pnpm build-script approval 
 - **Candidate pool is decoupled from Screening history** (`prisma/schema.prisma` comments):
   dedupe via unique `normalizedTitle` (case/punctuation-insensitive, `src/whatsapp/normalize.ts`)
   and unique `messageId`. Ratings reference Screenings only, so past picks never bias the wheel.
-- Protected server pages (`/wheel`, `/pool`, `/archive`) call `requireUser()` and render
-  server-side; stateful UI is a small client component fed by server-fetched props (do NOT add
-  a mount `useEffect` fetch — ESLint's `react-hooks/set-state-in-effect` errors on it).
+- Public-read pages (`/wheel`, `/pool`, `/archive`) fetch auth with `currentUser()` but render
+  server-side for signed-out visitors; any action UI (rate, add to pool, spin/reset) is gated behind
+  `signedIn` and the API routes still 401 unauthenticated callers. Use `requireUser()` only for
+  genuinely protected pages. Stateful UI is a small client component fed by server-fetched props
+  (do NOT add a mount `useEffect` fetch — ESLint's `react-hooks/set-state-in-effect` errors on it).
 - Theme is Tailwind v4 CSS-token classes from `globals.css` `@theme`:
   `bg-panel`, `bg-panel-2`, `border-edge`, `text-muted`, `bg-accent`, `text-accent-2`,
   `bg-background`, `text-foreground`. Use tokens, not arbitrary hex.

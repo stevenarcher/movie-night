@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { SignInPrompt } from "@/components/SignInPrompt";
 
 type Offer = {
   type: "RENT" | "BUY" | "STREAM" | "FREE";
@@ -33,9 +34,11 @@ const TYPE_LABEL: Record<Offer["type"], string> = {
 };
 
 export function PoolClient({
+  signedIn,
   canSimulate,
   initialCandidates,
 }: {
+  signedIn: boolean;
   canSimulate: boolean;
   initialCandidates: Candidate[];
 }) {
@@ -54,6 +57,7 @@ export function PoolClient({
 
   async function addMovie(e: React.FormEvent) {
     e.preventDefault();
+    if (!signedIn) return;
     setError(null);
     const trimmed = title.trim();
     if (!trimmed) return;
@@ -75,6 +79,7 @@ export function PoolClient({
   }
 
   async function removeMovie(id: string) {
+    if (!signedIn) return;
     const res = await fetch(`/api/pool/${id}`, { method: "DELETE" });
     if (res.ok) refresh();
     else {
@@ -84,6 +89,7 @@ export function PoolClient({
   }
 
   async function injectWhatsAppMessage() {
+    if (!signedIn) return;
     setInjecting(true);
     setError(null);
     const payload = {
@@ -132,38 +138,46 @@ export function PoolClient({
 
   return (
     <div className="flex flex-col gap-6">
-      <form
-        onSubmit={addMovie}
-        className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row"
-      >
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Suggest a movie title…"
-          maxLength={80}
-          className="min-w-0 flex-1 rounded-lg border border-edge bg-background px-4 py-2.5 text-sm font-light outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 placeholder:text-bone-dim"
-        />
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded-lg bg-accent px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
-          >
-            Add to pool
-          </button>
-          {canSimulate && (
+      {signedIn ? (
+        <form
+          onSubmit={addMovie}
+          className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row"
+        >
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Suggest a movie title…"
+            maxLength={80}
+            className="min-w-0 flex-1 rounded-lg border border-edge bg-background px-4 py-2.5 text-sm font-light outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 placeholder:text-bone-dim"
+          />
+          <div className="flex gap-2">
             <button
-              type="button"
-              onClick={injectWhatsAppMessage}
-              disabled={injecting}
-              className="rounded-lg border border-edge px-3 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent disabled:opacity-50"
-              title="Dev only: pushes a fake WhatsApp group message through the real ingest pipeline"
+              type="submit"
+              className="rounded-lg bg-accent px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.2em] text-background hover:bg-accent-2 transition-colors"
             >
-              {injecting ? "Injecting" : "😷 Inject test msg"}
+              Add to pool
             </button>
-          )}
-        </div>
-      </form>
+            {canSimulate && (
+              <button
+                type="button"
+                onClick={injectWhatsAppMessage}
+                disabled={injecting}
+                className="rounded-lg border border-edge px-3 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent disabled:opacity-50"
+                title="Dev only: pushes a fake WhatsApp group message through the real ingest pipeline"
+              >
+                {injecting ? "Injecting" : "😷 Inject test msg"}
+              </button>
+            )}
+          </div>
+        </form>
+      ) : (
+        <SignInPrompt
+          message="The pool is read-only when you're signed out. Sign in to add movies, or to run the WhatsApp test pipe."
+          label="Sign in to edit the pool"
+          callbackUrl="/pool"
+        />
+      )}
 
       {error && (
         <p className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-2 text-sm text-accent-2">
@@ -203,14 +217,16 @@ export function PoolClient({
                       {new Date(c.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeMovie(c.id)}
-                    className="rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-white/5 hover:text-accent"
-                    title="Remove from pool"
-                  >
-                    ✕
-                  </button>
+                  {signedIn && (
+                    <button
+                      type="button"
+                      onClick={() => removeMovie(c.id)}
+                      className="rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-white/5 hover:text-accent"
+                      title="Remove from pool"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {c.trailerUrl && (

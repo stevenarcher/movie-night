@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StarRating } from "@/components/StarRating";
+import { SignInButton } from "@/components/SignInButton";
 import type { Offer } from "@/lib/movie-meta";
 
 export type ScreeningView = {
@@ -24,11 +25,12 @@ export type RankingView = {
 };
 
 type Props = {
+  signedIn: boolean;
   initialScreenings: ScreeningView[];
   rankings: { top: RankingView[]; bottom: RankingView[] };
 };
 
-export function ArchiveClient({ initialScreenings, rankings }: Props) {
+export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) {
   const [screenings, setScreenings] = useState(initialScreenings);
   const [top, setTop] = useState(rankings.top);
   const [bottom, setBottom] = useState(rankings.bottom);
@@ -51,6 +53,7 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
   }
 
   async function rate(screeningId: string, value: number) {
+    if (!signedIn) return;
     setSaving(screeningId);
     setScreenings((prev) =>
       prev.map((s) =>
@@ -165,16 +168,27 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
               </div>
 
               <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
-                <StarRating
-                  key={s.myRating ?? 0}
-                  value={s.myRating ?? 0}
-                  onSubmit={(v) => rate(s.id, v)}
-                  pending={saving === s.id}
-                  interactive
-                />
-                <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
-                  {saving === s.id ? "Saving…" : s.myRating ? "Your rating" : "Tap to rate"}
-                </p>
+                {signedIn ? (
+                  <>
+                    <StarRating
+                      key={s.myRating ?? 0}
+                      value={s.myRating ?? 0}
+                      onSubmit={(v) => rate(s.id, v)}
+                      pending={saving === s.id}
+                      interactive
+                    />
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                      {saving === s.id ? "Saving…" : s.myRating ? "Your rating" : "Tap to rate"}
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <SignInButton label="Sign in to rate" callbackUrl="/archive" />
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                      Sign in to rate
+                    </p>
+                  </div>
+                )}
               </div>
             </li>
           ))}

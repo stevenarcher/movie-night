@@ -20,19 +20,17 @@ export async function Nav() {
           </span>
         </Link>
 
-        {user && (
-          <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.24em]">
-            <Link href="/wheel" className="text-muted transition-colors hover:text-accent">
-              Spin
-            </Link>
-            <Link href="/pool" className="text-muted transition-colors hover:text-accent">
-              Pool
-            </Link>
-            <Link href="/archive" className="text-muted transition-colors hover:text-accent">
-              Archive
-            </Link>
-          </nav>
-        )}
+        <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.24em]">
+          <Link href="/wheel" className="text-muted transition-colors hover:text-accent">
+            Spin
+          </Link>
+          <Link href="/pool" className="text-muted transition-colors hover:text-accent">
+            Pool
+          </Link>
+          <Link href="/archive" className="text-muted transition-colors hover:text-accent">
+            Archive
+          </Link>
+        </nav>
 
         <div className="ml-auto flex items-center gap-3">
           {user ? (

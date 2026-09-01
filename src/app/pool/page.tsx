@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/session";
+import { currentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { movieMeta } from "@/lib/movie-meta";
 import { PoolClient } from "@/components/PoolClient";
@@ -6,7 +6,7 @@ import { PoolClient } from "@/components/PoolClient";
 export const dynamic = "force-dynamic";
 
 export default async function PoolPage() {
-  await requireUser();
+  const user = await currentUser();
 
   const candidates = await prisma.candidate.findMany({ orderBy: { createdAt: "asc" } });
 
@@ -22,6 +22,7 @@ export default async function PoolPage() {
       </div>
 
       <PoolClient
+        signedIn={Boolean(user)}
         canSimulate={process.env.NODE_ENV !== "production"}
         initialCandidates={candidates.map((c) => {
           const meta = movieMeta(c.metadata);

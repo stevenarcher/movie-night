@@ -8,3 +8,10 @@ export async function requireUser() {
   if (!user?.id) redirect("/");
   return user;
 }
+
+/** Returns the session user, or null when signed out (pages behind a sign-in gate). */
+export async function currentUser() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  return session.user;
+}

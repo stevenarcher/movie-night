@@ -106,19 +106,20 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
           {screenings.map((s) => (
             <li
               key={s.id}
-              className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
+              className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row sm:items-start sm:gap-4"
             >
-              {s.posterUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={s.posterUrl}
-                  alt={`${s.movieTitle} poster`}
-                  loading="lazy"
-                  className="h-[110px] w-[74px] shrink-0 self-start rounded-md border border-edge object-cover"
-                />
-              )}
+              <div className="flex min-w-0 flex-1 gap-4">
+                {s.posterUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={s.posterUrl}
+                    alt={`${s.movieTitle} poster`}
+                    loading="lazy"
+                    className="h-[110px] w-[74px] shrink-0 self-start rounded-md border border-edge object-cover"
+                  />
+                )}
 
-              <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3">
                   <span className="rounded-md border border-accent/40 px-2 py-0.5 font-mono text-xs tracking-widest text-accent">
                     W{s.weekNumber}
@@ -161,8 +162,9 @@ export function ArchiveClient({ initialScreenings, rankings }: Props) {
                   </span>
                 </div>
               </div>
+              </div>
 
-              <div className="flex items-center gap-3 pl-1 sm:flex-col sm:items-end sm:gap-1">
+              <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
                 <StarRating
                   key={s.myRating ?? 0}
                   value={s.myRating ?? 0}

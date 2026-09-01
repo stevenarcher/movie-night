@@ -4,16 +4,31 @@ A social platform for one group's weekly movie pick. Friends suggest movies over
 a spinning wheel randomly locks in the week's screening, and everyone rates the pick in the
 archive.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/5b281893-6145-4867-97a4-85cd5b1cb03d/deploy-status)](https://app.netlify.com/projects/rachelarcher/deploys)
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org/docs)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/docs)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/docs)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/docs)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4-38BDF8?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/docs)
+[![WhatsApp Cloud API](https://img.shields.io/badge/WhatsApp%20Cloud%20API-25D366?style=flat-square&logo=whatsapp&logoColor=white)](https://developers.facebook.com/docs/whatsapp/cloud-api)
+[![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=flat-square&logo=netlify&logoColor=white)](https://docs.netlify.com)
+
 ## How it works
+
+The **archive, pool, and wheel are open to everyone** — you can browse them without signing in.
+Actions are gated behind Google sign-in, with a prompt in place of each control: rating a movie
+(archive), adding/removing movies (pool), and spinning or resetting the week (wheel).
 
 1. **Suggest** — group members drop a movie title in the WhatsApp group. The Cloud API webhook
    ingests suggestions into the pool automatically. Movies can also be added manually on
-   [/pool](http://localhost:3000/pool).
-2. **Spin** — one member opens [/wheel](http://localhost:3000/wheel) and spins. The random pick
-   happens **server-side** so it's fair; the wheel animates to the chosen movie and locks it for
-   the whole week (only one screening per week).
+   [/pool](http://localhost:3000/pool) (signed in).
+2. **Spin** — a signed-in member opens [/wheel](http://localhost:3000/wheel) and spins. The random
+   pick happens **server-side** so it's fair; the wheel animates to the chosen movie and locks it
+   for the whole week (only one screening per week).
 3. **Archive** — every weekly pick is recorded on [/archive](http://localhost:3000/archive) with
-   the group's average rating, plus top/bottom rankings.
+   the group's average rating, plus top/bottom rankings. Signed-in visitors can rate each pick.
 
 ## Stack
 
@@ -51,6 +66,8 @@ Other scripts: `pnpm typecheck`, `pnpm lint`, `pnpm test` (Vitest),
 | `WA_GROUP_ID` | The group the app listens to and announces into |
 | `WA_PHONE_NUMBER_ID` | The WhatsApp business number used by the Cloud API |
 | `WA_ACCESS_TOKEN` | Meta Graph API access token for sending messages |
+| `WA_FROM_PHONE` | The business phone number (international format) messages are sent from |
+| `TMDB_READ_TOKEN` | TMDB API v4 read token for the poster/metadata seed scripts |
 
 **Google + WhatsApp credentials are required for production flows.** Without them the app runs
 degraded: login and real webhook ingestion are disabled, but the pool, wheel, archive, ratings,
@@ -78,8 +95,8 @@ Setup steps (Meta for Developers):
    to `POST /api/whatsapp/webhook` (use a public URL — `ngrok http 3000` in dev).
 3. Fill the `WA_*` env vars above.
 
-During development, `/pool` has an "Inject test WhatsApp msg" button (hidden in production)
-that pushes a fake group message through the real ingest pipeline.
+During development, `/pool` has an "Inject test WhatsApp msg" button (shown only in dev when
+signed in) that pushes a fake group message through the real ingest pipeline.
 
 ### Design notes
 
@@ -99,7 +116,8 @@ that pushes a fake group message through the real ingest pipeline.
 
 ```
 src/
-├─ lib/            prisma singleton, auth (NextAuth), session guard, week math, API helpers
+├─ lib/            prisma singleton, auth (NextAuth), session helpers (currentUser/
+│                  requireUser), week math, API helpers
 ├─ whatsapp/       types, title normalize/validate, webhook parse, signature verify,
 │                  ingest (dedupe + persistence), send (visibility announcement)
 ├─ app/

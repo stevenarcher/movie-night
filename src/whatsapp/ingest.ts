@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { validateTitle } from "./validate";
 import type { IngestResult, ParsedInboundMessage } from "./types";
 import { MAX_POOL_SIZE } from "./validate";
+import { tmdbPoster } from "@/lib/tmdb";
 
 /**
  * Writes parsed WhatsApp messages into the candidate pool.
@@ -41,6 +42,8 @@ export async function ingestWhatsappMessages(
       continue;
     }
 
+    const posterUrl = await tmdbPoster(validation.title);
+
     const created = await prisma.candidate
       .create({
         data: {
@@ -52,7 +55,10 @@ export async function ingestWhatsappMessages(
           messageId: message.messageId,
           groupId: message.groupId,
           createdAt: message.timestamp,
-          metadata: { received: message.timestamp.toISOString() },
+          metadata: {
+            received: message.timestamp.toISOString(),
+            posterUrl: posterUrl ?? undefined,
+          },
         },
       })
       .then((row) => row)

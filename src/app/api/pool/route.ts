@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { movieMeta } from "@/lib/movie-meta";
 import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 import { validateTitle } from "@/whatsapp/validate";
+import { tmdbPoster } from "@/lib/tmdb";
 
 export async function GET() {
   const session = await auth();
@@ -56,12 +57,14 @@ export async function POST(request: Request) {
   }
 
   try {
+    const posterUrl = await tmdbPoster(validation.title);
     const candidate = await prisma.candidate.create({
       data: {
         title: validation.title,
         normalizedTitle: validation.normalizedTitle,
         source: "MANUAL",
         addedByUserId: session.user.id,
+        metadata: { posterUrl: posterUrl ?? undefined },
       },
     });
     return ok({ candidate });

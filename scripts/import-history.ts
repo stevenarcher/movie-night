@@ -1,4 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { tmdbPoster } from "../src/lib/tmdb.ts";
+
+try {
+  process.loadEnvFile();
+} catch {
+  /* .env missing is fine — TMDB token check below will complain */
+}
 
 const prisma = new PrismaClient();
 
@@ -19,6 +26,8 @@ const YEARS: Array<{ year: number; gid: number; weekCol: number; filmCol: number
 ];
 
 const MS_PER_DAY = 86_400_000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Monday on/after... returns the Monday of the ISO week that contains Jan 4 of `year`, plus `extraWeeks`. */
 function anchoredMonday(year: number, weekNumber: number): Date {
@@ -134,18 +143,24 @@ async function main() {
 
   let upserted = 0;
   let skipped = 0;
+  const SLEEP_MS = 150;
   for (const e of entries) {
     try {
+      const posterUrl = await tmdbPoster(e.movieTitle);
       await prisma.screening.upsert({
         where: { year_weekNumber: { year: e.year, weekNumber: e.weekNumber } },
-        create: e,
-        update: { movieTitle: e.movieTitle, weekStart: e.weekStart },
+        create: { ...e, metadata: { posterUrl: posterUrl ?? undefined } },
+        update: {
+          movieTitle: e.movieTitle,
+          weekStart: e.weekStart,
+          ...(posterUrl ? { metadata: { posterUrl } } : {}),
+        },
       });
-      upserted++;
-    } catch (err) {
+      upserted++;    } catch (err) {
       console.error(`  ✗ ${e.year} W${e.weekNumber} ${e.movieTitle} — ${(err as Error).message}`);
       skipped++;
     }
+    await sleep(SLEEP_MS);
   }
 
   console.log(`\nDone! ${upserted} upserted, ${skipped} failed.`);

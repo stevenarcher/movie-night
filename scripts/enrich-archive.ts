@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { tmdbMeta } from "../src/lib/tmdb.ts";
 
 try {
@@ -16,6 +16,11 @@ type Meta = { posterUrl?: string; trailerUrl?: string; offers: unknown[]; [k: st
 function hasPoster(metadata: unknown): boolean {
   const m = (metadata ?? {}) as { posterUrl?: unknown };
   return typeof m.posterUrl === "string" && m.posterUrl.length > 0;
+}
+
+function hasTrailer(metadata: unknown): boolean {
+  const m = (metadata ?? {}) as { trailerUrl?: unknown };
+  return typeof m.trailerUrl === "string" && m.trailerUrl.length > 0;
 }
 
 async function enrich(title: string, label: string) {
@@ -46,28 +51,37 @@ async function main() {
     select: { id: true, title: true, metadata: true },
   });
 
-  const screeningMissing = screenings.filter((s) => !hasPoster(s.metadata));
+  // Backfill both missing posters and missing trailers. Archive entries already
+  // carry posters from an earlier run, so filtering only on "missing poster" would
+  // skip them entirely and leave trailer links empty. Enrich those that lack a
+  // trailer so the archive shows watch links too.
+  const screeningMissingPoster = screenings.filter((s) => !hasPoster(s.metadata));
+  const screeningMissingTrailer = screenings.filter((s) => !hasTrailer(s.metadata));
   const candidateMissing = candidates.filter((c) => !hasPoster(c.metadata));
   console.log(
-    `Screenings: ${screenings.length} (${screenings.length - screeningMissing.length} have a poster)\n` +
+    `Screenings: ${screenings.length} (${screenings.length - screeningMissingPoster.length} have a poster, ` +
+      `${screeningMissingTrailer.length} missing a trailer)\n` +
       `Candidates: ${candidates.length} (${candidates.length - candidateMissing.length} have a poster)\n`,
   );
 
   let updated = 0;
 
-  for (const s of screeningMissing) {
+  for (const s of screeningMissingTrailer) {
     const label = `${s.year} W${s.weekNumber}`;
+    const alreadyHasPoster = hasPoster(s.metadata);
     const result = await enrich(s.movieTitle, label);
-    if (result?.meta.posterUrl) {
-      const prev = (s.metadata as Meta | null) ?? {};
+    if (!alreadyHasPoster && !result?.meta.posterUrl) continue;
+    if (result) {
+      const prev = (s.metadata as Meta | null) ?? ({} as Meta);
+      const offers = (Array.isArray(prev.offers) ? prev.offers : []) as unknown[] as Prisma.InputJsonValue;
       await prisma.screening.update({
         where: { id: s.id },
         data: {
           metadata: {
             ...prev,
-            posterUrl: result.meta.posterUrl,
-            trailerUrl: result.meta.trailerUrl ?? undefined,
-            offers: [],
+            posterUrl: result.meta.posterUrl ?? prev.posterUrl,
+            trailerUrl: result.meta.trailerUrl ?? prev.trailerUrl,
+            offers,
           },
         },
       });
@@ -95,7 +109,9 @@ async function main() {
     await sleep(150);
   }
 
-  console.log(`\nDone! ${updated} enriched (${screeningMissing.length} screenings + ${candidateMissing.length} candidates to process).`);
+  console.log(
+    `\nDone! ${updated} enriched (${screeningMissingTrailer.length} screenings + ${candidateMissing.length} candidates to process).`,
+  );
 }
 
 main()

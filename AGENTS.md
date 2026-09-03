@@ -53,6 +53,26 @@ datasource `url = env("DATABASE_URL")`). The Prisma 7 `prisma-client` generator 
 Next 16 Turbopack and conflicts with `@auth/prisma-adapter` types — do not upgrade until both
 are verified. `.env` / `.env.example` hold `DATABASE_URL` + `AUTH_SECRET`.
 
+## Production / Database
+
+- **All production info lives in `.env.production`** — do not prompt for it again. It holds the
+  Supabase Postgres `DATABASE_URL`, `AUTH_SECRET`, Google OAuth creds, `AUTH_URL`/`APP_URL`
+  (https://vc-movie-night.netlify.app), and the WhatsApp Cloud API vars.
+- Production is Postgres hosted on **Supabase** (connection string in `.env.production`). Its data
+  is a clone of the local Docker Postgres (`pnpm db:up`). Push local changes to prod **only when
+  asked**; typically by re-running the relevant local script against prod (see below) or by
+  re-cloning.
+- To run a scripts/** one-off against **production**, override `DATABASE_URL` with the value from
+  `.env.production` (from the repo root):
+  `DATABASE_URL="<prod url>" node --experimental-strip-types scripts/<script>.ts`
+  Scripts use `process.loadEnvFile()` to pick up remaining vars (e.g. `TMDB_READ_TOKEN`). Inspect
+  prod before/after with `psql "<prod url>" -c "..."`.
+- **Metadata backfill:** `scripts/enrich-archive.ts` fills missing posters **and** trailer URLs
+  (`metadata.posterUrl` / `metadata.trailerUrl`, formatted `https://www.youtube.com/watch?v=<key>`)
+  for both `Screening` (archive) and `Candidate` (pool) rows from TMDB. Run it locally and against
+  prod to keep trailer links populated. There is no schema change for this — it writes the free-form
+  `metadata` JSON.
+
 ## Auth
 
 NextAuth v5 (**beta, database sessions**) + Google. `session.user.id` is augmented via

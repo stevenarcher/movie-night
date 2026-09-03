@@ -17,7 +17,7 @@ export default async function Home() {
     [poolCount, currentScreening] = await Promise.all([
       prisma.candidate.count(),
       prisma.screening.findUnique({
-        where: { weekNumber: week.weekNumber },
+        where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
         select: { movieTitle: true, weekNumber: true },
       }),
     ]);

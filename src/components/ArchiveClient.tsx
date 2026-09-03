@@ -7,6 +7,7 @@ import type { Offer } from "@/lib/movie-meta";
 
 export type ScreeningView = {
   id: string;
+  year: number;
   weekNumber: number;
   weekStart: string;
   movieTitle: string;
@@ -35,6 +36,11 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
   const [top, setTop] = useState(rankings.top);
   const [bottom, setBottom] = useState(rankings.bottom);
   const [saving, setSaving] = useState<string | null>(null);
+
+  const years = [...new Set(screenings.map((s) => s.year))].sort((a, b) => b - a);
+  const [selectedYear, setSelectedYear] = useState<number | null>(years[0] ?? null);
+  const year = selectedYear ?? years[0] ?? 2026;
+  const visible = screenings.filter((s) => s.year === year);
 
   async function refresh() {
     const [archiveRes, rankingRes] = await Promise.all([
@@ -87,6 +93,24 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
 
   return (
     <div className="flex flex-col gap-10">
+      {years.length > 1 && (
+        <nav className="flex flex-wrap gap-2" aria-label="Archive year">
+          {years.map((y) => (
+            <button
+              key={y}
+              onClick={() => setSelectedYear(y)}
+              className={`rounded-full border px-4 py-1.5 font-mono text-sm tracking-widest transition-colors ${
+                y === year
+                  ? "border-accent bg-accent text-background"
+                  : "border-edge text-muted hover:border-accent/60 hover:text-accent"
+              }`}
+            >
+              {y}
+            </button>
+          ))}
+        </nav>
+      )}
+
       {(top.length > 0 || bottom.length > 0) && (
         <section className="grid gap-4 sm:grid-cols-2">
           {top.length > 0 && (
@@ -98,7 +122,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
         </section>
       )}
 
-      {screenings.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="rounded-xl border border-dashed border-edge bg-panel-2 p-14 text-center text-muted">
           <p className="font-display text-3xl italic">The reel is empty</p>
           <p className="mt-2 text-sm">No movies have been selected yet.</p>
@@ -106,7 +130,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
-          {screenings.map((s) => (
+          {visible.map((s) => (
             <li
               key={s.id}
               className="flex flex-col gap-3 rounded-xl border border-edge bg-panel p-4 sm:flex-row sm:items-start sm:gap-4"
@@ -125,7 +149,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
                 <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3">
                   <span className="rounded-md border border-accent/40 px-2 py-0.5 font-mono text-xs tracking-widest text-accent">
-                    W{s.weekNumber}
+                    {s.year} · W{s.weekNumber}
                   </span>
                   <h2 className="font-display truncate text-xl">{s.movieTitle}</h2>
                 </div>
@@ -157,6 +181,11 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
                   </div>
                 )}
 
+                {s.year >= 2025 && (
+                  <p className="mt-1.5 pl-1 text-xs uppercase tracking-[0.12em] text-muted">
+                    Watched {formatWatchDate(s.weekStart)}
+                  </p>
+                )}
                 <div className="mt-2 flex items-center gap-3 pl-1 text-sm text-muted">
                   <StarRating displayValue={s.averageRating} />
                   <span>
@@ -196,6 +225,12 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
       )}
     </div>
   );
+}
+
+function formatWatchDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function RankingCard({ title, rows }: { title: string; rows: RankingView[] }) {

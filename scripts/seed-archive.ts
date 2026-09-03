@@ -69,6 +69,7 @@ async function main() {
     const weekNumber = i + 1;
     await prisma.screening.create({
       data: {
+        year: 2026,
         weekNumber,
         weekStart: weekStartDate(weekNumber),
         movieTitle: films[i],

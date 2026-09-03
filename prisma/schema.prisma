@@ -104,7 +104,8 @@ model Candidate {
 /// One week's locked-in movie (the weekly history / archive).
 model Screening {
   id               String   @id @default(cuid())
-  weekNumber       Int      @unique
+  year             Int
+  weekNumber       Int
   weekStart        DateTime
   movieTitle       String
   candidateId      String?  @unique
@@ -117,6 +118,7 @@ model Screening {
 
   ratings Rating[]
 
+  @@unique([year, weekNumber])
   @@index([weekNumber])
   @@index([createdAt])
 }

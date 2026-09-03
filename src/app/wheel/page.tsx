@@ -16,7 +16,7 @@ export default async function WheelPage() {
   const [candidates, locked] = await Promise.all([
     prisma.candidate.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.screening.findUnique({
-      where: { weekNumber: week.weekNumber },
+      where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
       select: { movieTitle: true, weekNumber: true, metadata: true },
     }),
   ]);
@@ -24,7 +24,7 @@ export default async function WheelPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
       <div className="mb-12 text-center">
-        <p className="eyebrow-accent mb-4">WK {week.weekNumber} · PICTURE START</p>
+        <p className="eyebrow-accent mb-4">WK {week.weekNumber} · {week.year}</p>
         <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Spin the wheel</h1>
         <p className="mt-5 mx-auto max-w-md text-muted">
           The server picks the winner at random, the wheel settles on it, and the movie is locked

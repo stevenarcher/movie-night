@@ -9,9 +9,10 @@ export default async function ArchivePage() {
   const user = await currentUser();
 
   const screenings = await prisma.screening.findMany({
-    orderBy: { weekNumber: "desc" },
+    orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
     select: {
       id: true,
+      year: true,
       weekNumber: true,
       weekStart: true,
       movieTitle: true,
@@ -27,6 +28,7 @@ export default async function ArchivePage() {
     const meta = movieMeta(s.metadata);
     return {
       id: s.id,
+      year: s.year,
       weekNumber: s.weekNumber,
       weekStart: s.weekStart.toISOString(),
       movieTitle: s.movieTitle,

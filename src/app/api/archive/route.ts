@@ -8,9 +8,10 @@ export async function GET() {
   if (!session?.user?.id) return unauthorized();
 
   const screenings = await prisma.screening.findMany({
-    orderBy: { weekNumber: "desc" },
+    orderBy: [{ year: "desc" }, { weekNumber: "desc" }],
     select: {
       id: true,
+      year: true,
       weekNumber: true,
       weekStart: true,
       movieTitle: true,
@@ -28,6 +29,7 @@ export async function GET() {
     const myRating = s.ratings.find((r) => r.userId === session.user!.id)?.value ?? null;
     return {
       id: s.id,
+      year: s.year,
       weekNumber: s.weekNumber,
       weekStart: s.weekStart,
       movieTitle: s.movieTitle,

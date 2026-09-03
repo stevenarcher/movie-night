@@ -20,10 +20,12 @@ export async function POST() {
   const week = currentWeek();
 
   const existing = await prisma.screening.findUnique({
-    where: { weekNumber: week.weekNumber },
+    where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
   });
   if (existing) {
-    return conflict(`A movie is already locked for week ${week.weekNumber}: "${existing.movieTitle}".`);
+    return conflict(
+      `A movie is already locked for week ${week.weekNumber} of ${week.year}: "${existing.movieTitle}".`,
+    );
   }
 
   const candidates = await prisma.candidate.findMany({
@@ -39,6 +41,7 @@ export async function POST() {
   const screening = await prisma.$transaction(async (tx) => {
     const created = await tx.screening.create({
       data: {
+        year: week.year,
         weekNumber: week.weekNumber,
         weekStart: week.weekStart,
         movieTitle: pick.title,
@@ -59,7 +62,7 @@ export async function POST() {
     const code = (error as { code?: string }).code;
     if (code === "P2002") {
       const locked = await prisma.screening.findUnique({
-        where: { weekNumber: week.weekNumber },
+        where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
       });
       return { conflict: locked ?? null };
     }
@@ -69,13 +72,15 @@ export async function POST() {
   if ("conflict" in screening) {
     return conflict(
       screening.conflict
-        ? `A movie is already locked for week ${week.weekNumber}: "${screening.conflict.movieTitle}".`
+        ? `A movie is already locked for week ${week.weekNumber} of ${week.year}: "${screening.conflict.movieTitle}".`
         : "A movie is already locked for this week.",
     );
   }
 
   // Announce to the WhatsApp group (fire-and-forget; non-fatal on failure).
-  void sendGroupMessage(`🎬 Movie Night week ${week.weekNumber} is… "${screening.movieTitle}"!`).catch(() => {});
+  void sendGroupMessage(
+    `🎬 Movie Night week ${week.weekNumber} of ${week.year} is… "${screening.movieTitle}"!`,
+  ).catch(() => {});
 
   return ok({
     screening: {
@@ -101,7 +106,7 @@ export async function DELETE() {
   const week = currentWeek();
 
   const existing = await prisma.screening.findUnique({
-    where: { weekNumber: week.weekNumber },
+    where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
     select: { id: true, movieTitle: true, metadata: true },
   });
   if (!existing) {

@@ -29,13 +29,10 @@ export type RankingView = {
 type Props = {
   signedIn: boolean;
   initialScreenings: ScreeningView[];
-  rankings: { top: RankingView[]; bottom: RankingView[] };
 };
 
-export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) {
+export function ArchiveClient({ signedIn, initialScreenings }: Props) {
   const [screenings, setScreenings] = useState(initialScreenings);
-  const [top, setTop] = useState(rankings.top);
-  const [bottom, setBottom] = useState(rankings.bottom);
   const [saving, setSaving] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
@@ -45,19 +42,17 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
   const filtered = screenings.filter((s) => (showAll ? true : s.watchOnVC));
   const visible = filtered.filter((s) => s.year === year);
 
+  const yearRankings = computeRankings(
+    screenings.filter((s) => s.watchOnVC && s.year === year),
+  );
+  const top = yearRankings.top;
+  const bottom = yearRankings.bottom;
+
   async function refresh() {
-    const [archiveRes, rankingRes] = await Promise.all([
-      fetch("/api/archive"),
-      fetch("/api/ratings/rankings"),
-    ]);
-    if (archiveRes.ok) {
-      const data = await archiveRes.json();
+    const res = await fetch("/api/archive");
+    if (res.ok) {
+      const data = await res.json();
       setScreenings(data.screenings);
-    }
-    if (rankingRes.ok) {
-      const data = await rankingRes.json();
-      setTop(data.top);
-      setBottom(data.bottom);
     }
   }
 
@@ -211,7 +206,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
                 <div className="mt-2 flex items-center gap-3 pl-1 text-sm text-muted">
                   <StarRating displayValue={s.averageRating} />
                   <span>
-                    {s.averageRating === null ? "No ratings yet" : `${s.averageRating.toFixed(1)}`}{" "}
+                    {s.averageRating === null ? "No ratings yet" : `${s.averageRating.toFixed(2)}`}{" "}
                     · {s.ratingCount} rating{s.ratingCount === 1 ? "" : "s"}
                   </span>
                 </div>
@@ -256,6 +251,32 @@ function formatWatchDate(iso: string | null): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function computeRankings(screenings: ScreeningView[]): { top: RankingView[]; bottom: RankingView[] } {
+  const byTitle = new Map<string, RankingView>();
+  for (const s of screenings) {
+    if (s.averageRating === null) continue;
+    const key = s.movieTitle.toLowerCase();
+    const existing = byTitle.get(key);
+    if (existing) {
+      const total = existing.average * existing.count + s.averageRating * s.ratingCount;
+      const count = existing.count + s.ratingCount;
+      byTitle.set(key, {
+        name: s.movieTitle,
+        average: Math.round((total / count) * 100) / 100,
+        count,
+      });
+    } else {
+      byTitle.set(key, {
+        name: s.movieTitle,
+        average: Math.round(s.averageRating * 100) / 100,
+        count: s.ratingCount,
+      });
+    }
+  }
+  const rows = [...byTitle.values()].sort((a, b) => b.average - a.average || b.count - a.count);
+  return { top: rows.slice(0, 5), bottom: [...rows].reverse().slice(0, 5) };
+}
+
 function RankingCard({ title, rows }: { title: string; rows: RankingView[] }) {
   return (
     <div className="overflow-hidden rounded-xl border border-edge bg-panel">
@@ -269,7 +290,7 @@ function RankingCard({ title, rows }: { title: string; rows: RankingView[] }) {
               <span className="font-mono text-xs tracking-widest text-muted">{i + 1}.</span>
               <span className="min-w-0 truncate">{r.name}</span>
             </span>
-            <span className="shrink-0 font-mono text-xs tracking-widest text-accent">{r.average.toFixed(1)}</span>
+            <span className="shrink-0 font-mono text-xs tracking-widest text-accent">{r.average.toFixed(2)}</span>
           </li>
         ))}
       </ol>

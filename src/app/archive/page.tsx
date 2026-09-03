@@ -1,7 +1,7 @@
 import { currentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { movieMeta } from "@/lib/movie-meta";
-import { ArchiveClient, type RankingView, type ScreeningView } from "@/components/ArchiveClient";
+import { ArchiveClient, type ScreeningView } from "@/components/ArchiveClient";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +43,6 @@ export default async function ArchivePage() {
     };
   });
 
-  const rankings = await computeRankings();
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
       <div className="mb-10">
@@ -56,50 +54,7 @@ export default async function ArchivePage() {
         </p>
       </div>
 
-      <ArchiveClient
-        signedIn={Boolean(user)}
-        initialScreenings={views}
-        rankings={rankings}
-      />
+      <ArchiveClient signedIn={Boolean(user)} initialScreenings={views} />
     </div>
   );
-}
-
-async function computeRankings() {
-  const grouped = await prisma.rating.groupBy({
-    by: ["screeningId"],
-    _avg: { value: true },
-    _count: { value: true },
-  });
-  const ids = grouped.map((g) => g.screeningId);
-  const screenings = ids.length
-    ? await prisma.screening.findMany({
-        where: { id: { in: ids }, watchOnVC: true },
-        select: { id: true, movieTitle: true },
-      })
-    : [];
-  const map = new Map(screenings.map((s) => [s.id, s]));
-
-  const byTitle = new Map<string, RankingView>();
-  for (const row of grouped) {
-    const s = map.get(row.screeningId);
-    if (!s || row._avg.value === null) continue;
-    const avg = Math.round((row._avg.value ?? 0) * 100) / 100;
-    const count = row._count.value ?? 0;
-    const key = s.movieTitle.toLowerCase();
-    const existing = byTitle.get(key);
-    if (existing) {
-      const total = existing.average * existing.count + avg * count;
-      byTitle.set(key, {
-        name: s.movieTitle,
-        average: Math.round((total / (existing.count + count)) * 100) / 100,
-        count: existing.count + count,
-      });
-    } else {
-      byTitle.set(key, { name: s.movieTitle, average: avg, count });
-    }
-  }
-
-  const rows = [...byTitle.values()].sort((a, b) => b.average - a.average || b.count - a.count);
-  return { top: rows.slice(0, 5), bottom: [...rows].reverse().slice(0, 5) };
 }

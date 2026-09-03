@@ -15,7 +15,7 @@ export async function GET() {
   const screeningIds = grouped.map((g) => g.screeningId);
   const screenings = screeningIds.length
     ? await prisma.screening.findMany({
-        where: { id: { in: screeningIds } },
+        where: { id: { in: screeningIds }, watchOnVC: true },
         select: { id: true, movieTitle: true },
       })
     : [];

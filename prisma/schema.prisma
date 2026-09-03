@@ -106,13 +106,14 @@ model Screening {
   id               String   @id @default(cuid())
   year             Int
   weekNumber       Int
-  weekStart        DateTime
+  weekStart        DateTime?
   movieTitle       String
   candidateId      String?  @unique
   candidate        Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   selectedByUserId String?
   selectedBy       User?    @relation(fields: [selectedByUserId], references: [id], onDelete: SetNull)
   votes            Int      @default(0)
+  watchOnVC        Boolean  @default(true)
   metadata         Json?
   createdAt        DateTime @default(now())
 

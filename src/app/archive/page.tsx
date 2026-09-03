@@ -16,6 +16,7 @@ export default async function ArchivePage() {
       weekNumber: true,
       weekStart: true,
       movieTitle: true,
+      watchOnVC: true,
       metadata: true,
       ratings: { select: { value: true, userId: true } },
     },
@@ -30,8 +31,9 @@ export default async function ArchivePage() {
       id: s.id,
       year: s.year,
       weekNumber: s.weekNumber,
-      weekStart: s.weekStart.toISOString(),
+      weekStart: s.watchOnVC ? s.weekStart!.toISOString() : null,
       movieTitle: s.movieTitle,
+      watchOnVC: s.watchOnVC,
       posterUrl: meta.posterUrl,
       trailerUrl: meta.trailerUrl,
       offers: meta.offers,
@@ -72,7 +74,7 @@ async function computeRankings() {
   const ids = grouped.map((g) => g.screeningId);
   const screenings = ids.length
     ? await prisma.screening.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, watchOnVC: true },
         select: { id: true, movieTitle: true },
       })
     : [];

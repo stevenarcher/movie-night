@@ -74,3 +74,93 @@ Notes:
 - `pnpm test` — 22 passed
 - `pnpm build` — clean
 - `/archive` smoke test returns 200 and renders the year selector (2020–2026) with 2026 default.
+
+---
+
+## Follow-up: `watchOnVC` flag + corrected import
+
+The original import treated **every** titled row as a weekly `Screening`, ignoring the `Watched`
+column. Films that were never the featured weekly pick got imported as weekly picks. Fixed:
+
+### Schema (`prisma/schema.prisma`)
+
+- `Screening.watchOnVC Boolean @default(true)` — `true` = weekly VC pick; `false` = non-VC film.
+- `Screening.weekStart` made **nullable** — non-VC films have no recorded watch date.
+- Migration: `prisma/migrations/20260903000000_add_screening_watch_on_vc/`.
+
+### Import (`scripts/import-history.ts`)
+
+- Reads the `Watched` column (index 3 in every tab): `TRUE` → `watchOnVC: true` (real week/date,
+  numbered as before); `FALSE`/empty → `watchOnVC: false`.
+- Non-VC films share the `Screening` table but get a **synthetic week number** starting at
+  `10_000` so the `(year, weekNumber)` unique key never collides and ordering stays stable; the
+  UI hides the number for non-VC. `weekStart` is left `null`.
+- **Deletes all 2020–2025 screenings first**, then re-imports cleanly. 2026 live spin data and
+  all ratings are untouched.
+
+### Archive UI
+
+- `ArchiveClient` gains a **"Show all films"** toggle (default off). Off → only `watchOnVC: true`
+  (weekly picks). On → reveals non-VC films.
+- Non-VC films render with a **year-only** badge (no `· W{n}`) and no "Watched" line.
+- `ScreeningView`/API carry `watchOnVC`; `weekStart` is `string | null`.
+- Rankings (`/archive` `computeRankings` + `api/ratings/rankings/route.ts`) exclude non-VC films.
+
+### Data
+
+| Year | VC | Non-VC |
+|------|----|--------|
+| 2020 | 38 | 2 |
+| 2021 | 62 | 17 |
+| 2022 | 48 | 15 |
+| 2023 | 48 | 11 |
+| 2024 | 42 | 52 |
+| 2025 | 38 | 43 |
+| 2026 | 45 | 0 |
+
+Total 416 (276 watchOnVC, 140 non-VC). `enrich-archive.ts` re-run fetches posters for non-VC
+films too (4 titles had no TMDB match, e.g. "To Be Released").
+
+### Week-number fix (2020–2024)
+
+The spreadsheet's `Week` column runs a sequence across **all** rows (VC and non-VC alike), so
+for 2020–2024 it produced gappy VC week numbers (e.g. 2024: 1, 4, 5, 6, 8, 10, …) — non-VC films
+were wrongly consuming weekly slots. `import-history.ts`'s `numbered` branch now sorts VC films
+by their raw week value (chronological) and renumbers them **consecutively 1..N**; non-VC films
+never increment the count. 2025 is unaffected (already consecutive 1..38 via real dates).
+
+After the re-run each year's VC weeks are consecutive 1..N:
+
+| Year | VC weeks |
+|------|----------|
+| 2020 | 1..38 |
+| 2021 | 1..62 |
+| 2022 | 1..48 |
+| 2023 | 1..48 |
+| 2024 | 1..42 |
+| 2025 | 1..38 |
+| 2026 | 1..27 |
+
+Non-VC films keep synthetic 10000+ week numbers (max 10052), never shown in the UI.
+
+### 2026 wrong-date fix
+
+All 45 of the 2026 rows originally came from `scripts/seed-archive.ts`, which fabricated
+`weekStart` as consecutive Mondays from 5 Jan 2026 (`5 Jan + (week − 1) × 7 days`). Real watch
+dates are irregular, so **every 2026 date was wrong** (e.g. "Deathstalker" showed 09 Nov 2026
+instead of 28 Aug 2026), and the seed flagged **all** rows as `watchOnVC: true` even though the
+sheet marks many as non-VC.
+
+`import-history.ts` now imports 2026 from the spreadsheet's `2026` tab:
+- The tab has a different layout — **`Watched on VC` at column 1** (2020–2025 use column 3) and
+  `Date` at column 11 — so the per-year config gained a `watchedCol` and fetches named tabs via
+  the `sheet=` GViz URL instead of `gid`.
+- VC picks (`Watched on VC = TRUE`) use the real `Date` column, renumbered consecutively 1..N.
+- Non-VC films get `watchOnVC: false` (synthetic weeks, year-only in the UI).
+- The wipe step now also covers 2026.
+
+Result: 2026 = **27 VC** (real dates, weeks 1..27; Deathstalker → 2026-08-28) + **49 non-VC**.
+`scripts/seed-archive.ts` was **removed** — it was an orphaned dev utility (nothing referenced
+it) whose fabricated dates caused this bug; `import-history.ts` is the single source of truth.
+
+Totals after all re-imports: 492 (303 watchOnVC, 189 non-VC). Ratings remain untouched.

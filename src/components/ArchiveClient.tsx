@@ -9,8 +9,9 @@ export type ScreeningView = {
   id: string;
   year: number;
   weekNumber: number;
-  weekStart: string;
+  weekStart: string | null;
   movieTitle: string;
+  watchOnVC: boolean;
   posterUrl: string | null;
   trailerUrl: string | null;
   offers: Offer[];
@@ -36,11 +37,13 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
   const [top, setTop] = useState(rankings.top);
   const [bottom, setBottom] = useState(rankings.bottom);
   const [saving, setSaving] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const years = [...new Set(screenings.map((s) => s.year))].sort((a, b) => b - a);
   const [selectedYear, setSelectedYear] = useState<number | null>(years[0] ?? null);
   const year = selectedYear ?? years[0] ?? 2026;
-  const visible = screenings.filter((s) => s.year === year);
+  const filtered = screenings.filter((s) => (showAll ? true : s.watchOnVC));
+  const visible = filtered.filter((s) => s.year === year);
 
   async function refresh() {
     const [archiveRes, rankingRes] = await Promise.all([
@@ -93,6 +96,25 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
 
   return (
     <div className="flex flex-col gap-10">
+      <label className="inline-flex cursor-pointer items-center gap-3 py-1 text-sm text-muted">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showAll}
+          onClick={() => setShowAll((v) => !v)}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors ${
+            showAll ? "border-accent bg-accent" : "border-edge bg-panel-2"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+              showAll ? "translate-x-[22px] bg-background" : "translate-x-[3px] bg-muted"
+            }`}
+          />
+        </button>
+        <span className="uppercase tracking-[0.16em]">Show all films</span>
+      </label>
+
       {years.length > 1 && (
         <nav className="flex flex-wrap gap-2" aria-label="Archive year">
           {years.map((y) => (
@@ -149,7 +171,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
                 <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3">
                   <span className="rounded-md border border-accent/40 px-2 py-0.5 font-mono text-xs tracking-widest text-accent">
-                    {s.year} · W{s.weekNumber}
+                    {s.watchOnVC ? `${s.year} · W${s.weekNumber}` : s.year}
                   </span>
                   <h2 className="font-display truncate text-xl">{s.movieTitle}</h2>
                 </div>
@@ -181,7 +203,7 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
                   </div>
                 )}
 
-                {s.year >= 2025 && (
+                {s.watchOnVC && s.year >= 2025 && (
                   <p className="mt-1.5 pl-1 text-xs uppercase tracking-[0.12em] text-muted">
                     Watched {formatWatchDate(s.weekStart)}
                   </p>
@@ -227,7 +249,8 @@ export function ArchiveClient({ signedIn, initialScreenings, rankings }: Props) 
   );
 }
 
-function formatWatchDate(iso: string): string {
+function formatWatchDate(iso: string | null): string {
+  if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });

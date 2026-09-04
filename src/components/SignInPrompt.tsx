@@ -5,7 +5,7 @@ import { SignInButton } from "@/components/SignInButton";
 export function SignInPrompt({
   message,
   label = "Sign in to continue",
-  callbackUrl = "/wheel",
+  callbackUrl = "/choose",
 }: {
   message: string;
   label?: string;

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function ResetSpinButton({ movieTitle }: { movieTitle: string }) {
+export function ResetPickButton({ movieTitle }: { movieTitle: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +11,7 @@ export function ResetSpinButton({ movieTitle }: { movieTitle: string }) {
   async function reset() {
     if (busy) return;
     const confirmed = window.confirm(
-      `Reset this week's spin?\n\n"${movieTitle}" will be returned to the pool so you can spin again. This deletes any ratings on this week's pick.`,
+      `Reset this week's pick?\n\n"${movieTitle}" will be returned to the pool so you can choose again. This deletes any ratings on this week's pick.`,
     );
     if (!confirmed) return;
 
@@ -40,7 +40,7 @@ export function ResetSpinButton({ movieTitle }: { movieTitle: string }) {
         disabled={busy}
         className="rounded-full border border-edge px-5 py-2.5 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors hover:border-accent/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {busy ? "Resetting…" : "Reset this week's spin"}
+        {busy ? "Resetting…" : "Reset this week's pick"}
       </button>
       {error && <p className="mt-2 text-sm text-foreground/80">{error}</p>}
     </div>

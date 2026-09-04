@@ -116,10 +116,10 @@ function StatusPanel({
             <p className="text-sm text-muted">The next selection has not been made yet.</p>
           </div>
           <Link
-            href="/wheel"
+            href="/choose"
             className="rounded-full bg-accent px-8 py-3 text-sm font-medium text-background shadow-[0_0_30px_rgba(2,223,130,0.35)] transition-colors hover:bg-accent-2"
           >
-            Spin the wheel →
+            Choose this week&apos;s movie →
           </Link>
         </>
       )}

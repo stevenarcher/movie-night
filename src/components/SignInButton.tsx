@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react";
 
 export function SignInButton({
   label = "Sign in",
-  callbackUrl = "/wheel",
+  callbackUrl = "/choose",
 }: {
   label?: string;
   callbackUrl?: string;

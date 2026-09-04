@@ -31,6 +31,7 @@ model User {
   ratings     Rating[]
   candidates  Candidate[]
   screenings  Screening[]
+  votes       Vote[]
 }
 
 model Account {
@@ -78,6 +79,12 @@ enum CandidateSource {
   MANUAL
 }
 
+enum SelectionMethod {
+  SPIN
+  VOTE
+  MANUAL
+}
+
 /// A movie sitting in the wheel pool for an upcoming week.
 /// Deduplication happens via the unique normalizedTitle.
 model Candidate {
@@ -95,6 +102,7 @@ model Candidate {
   createdAt       DateTime        @default(now())
 
   screening Screening?
+  votes     Vote[]
 
   @@index([source])
   @@index([addedByUserId])
@@ -111,9 +119,10 @@ model Screening {
   candidateId      String?  @unique
   candidate        Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   selectedByUserId String?
-  selectedBy       User?    @relation(fields: [selectedByUserId], references: [id], onDelete: SetNull)
-  votes            Int      @default(0)
-  watchOnVC        Boolean  @default(true)
+  selectedBy       User?            @relation(fields: [selectedByUserId], references: [id], onDelete: SetNull)
+  selectionMethod  SelectionMethod  @default(SPIN)
+  votes            Int              @default(0)
+  watchOnVC        Boolean          @default(true)
   metadata         Json?
   createdAt        DateTime @default(now())
 
@@ -138,4 +147,17 @@ model Rating {
 
   @@unique([userId, screeningId])
   @@index([screeningId])
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  userId      String
+  candidateId String
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, candidateId])
+  @@index([candidateId])
 }

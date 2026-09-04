@@ -21,8 +21,8 @@ export async function Nav() {
         </Link>
 
         <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.24em]">
-          <Link href="/wheel" className="text-muted transition-colors hover:text-accent">
-            Spin
+          <Link href="/choose" className="text-muted transition-colors hover:text-accent">
+            Choose
           </Link>
           <Link href="/pool" className="text-muted transition-colors hover:text-accent">
             Pool

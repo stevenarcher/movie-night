@@ -2,13 +2,13 @@ import { currentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
 import { movieMeta, type MovieMeta } from "@/lib/movie-meta";
-import { WheelClient } from "@/components/WheelClient";
-import { ResetSpinButton } from "@/components/ResetSpinButton";
+import { ChooseClient } from "@/components/ChooseClient";
+import { ResetPickButton } from "@/components/ResetPickButton";
 import { SignInPrompt } from "@/components/SignInPrompt";
 
 export const dynamic = "force-dynamic";
 
-export default async function WheelPage() {
+export default async function ChoosePage() {
   const user = await currentUser();
   const signedIn = Boolean(user);
 
@@ -17,7 +17,13 @@ export default async function WheelPage() {
     prisma.candidate.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.screening.findUnique({
       where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
-      select: { movieTitle: true, weekNumber: true, metadata: true },
+      select: {
+        movieTitle: true,
+        weekNumber: true,
+        metadata: true,
+        selectionMethod: true,
+        selectedBy: { select: { name: true } },
+      },
     }),
   ]);
 
@@ -25,10 +31,9 @@ export default async function WheelPage() {
     <div className="mx-auto max-w-3xl px-4 py-16">
       <div className="mb-12 text-center">
         <p className="eyebrow-accent mb-4">WK {week.weekNumber} · {week.year}</p>
-        <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Spin the wheel</h1>
+        <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Choose this week&apos;s movie</h1>
         <p className="mt-5 mx-auto max-w-md text-muted">
-          The server picks the winner at random, the wheel settles on it, and the movie is locked
-          for the week.
+          Spin the wheel, vote, or just pick one. Whichever you choose, the movie is locked for the week.
         </p>
       </div>
 
@@ -38,11 +43,14 @@ export default async function WheelPage() {
           movieTitle={locked.movieTitle}
           weekNumber={locked.weekNumber}
           meta={movieMeta(locked.metadata)}
+          selectionMethod={locked.selectionMethod}
+          selectedByName={locked.selectedBy?.name ?? null}
         />
       ) : (
-        <WheelClient
+        <ChooseClient
           signedIn={signedIn}
           candidates={candidates.map((c) => ({
+            id: c.id,
             title: c.title,
             posterUrl: movieMeta(c.metadata).posterUrl,
           }))}
@@ -57,12 +65,32 @@ function LockedPanel({
   movieTitle,
   weekNumber,
   meta,
+  selectionMethod,
+  selectedByName,
 }: {
   signedIn: boolean;
   movieTitle: string;
   weekNumber: number;
   meta: MovieMeta;
+  selectionMethod: string;
+  selectedByName: string | null;
 }) {
+  const initials = selectedByName
+    ? selectedByName
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : null;
+
+  const methodLabel =
+    selectionMethod === "SPIN"
+      ? "Spun"
+      : selectionMethod === "VOTE"
+        ? "Voted"
+        : "Picked";
+
   return (
     <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-edge bg-panel">
       {meta.posterUrl && (
@@ -81,7 +109,17 @@ function LockedPanel({
         </div>
         <p className="eyebrow mt-8">Week {weekNumber} is already locked in</p>
         <h2 className="font-display mt-3 text-3xl leading-tight">{movieTitle}</h2>
-        <p className="mt-5 text-sm text-muted">
+
+        {initials && (
+          <p className="mt-3 text-sm text-muted">
+            {methodLabel} by{" "}
+            <span className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-accent/15 px-1.5 text-[11px] font-semibold text-accent">
+              {initials}
+            </span>
+          </p>
+        )}
+
+        <p className="mt-3 text-sm text-muted">
           The wheel waits for next week. Everyone can rate the pick in the archive.
         </p>
 
@@ -114,12 +152,12 @@ function LockedPanel({
 
         <div className="mt-8">
           {signedIn ? (
-            <ResetSpinButton movieTitle={movieTitle} />
+            <ResetPickButton movieTitle={movieTitle} />
           ) : (
             <SignInPrompt
-              message="Resetting the week's pick requires signing in. Sign in and you can return this movie to the pool or watch the trailer above."
+              message="Resetting this week's pick requires signing in."
               label="Sign in to unlock this week"
-              callbackUrl="/wheel"
+              callbackUrl="/choose"
             />
           )}
         </div>

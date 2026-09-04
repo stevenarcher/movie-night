@@ -6,14 +6,17 @@ import { sendGroupMessage } from "@/whatsapp/send";
 import { normalizeTitle } from "@/whatsapp/normalize";
 import { badRequest, conflict, ok, serverError, unauthorized } from "@/lib/api";
 
+import type { SelectionMethod } from "@prisma/client";
+
 /**
- * Locks in this week's movie.
+ * Locks in this week's movie via one of three methods:
+ *   SPIN  — random server-side pick (default, backwards-compatible)
+ *   VOTE  — the candidate with the most votes wins
+ *   MANUAL — the caller picks a specific candidate
  *
- * The random pick happens server-side so the result is fair, then the client
- * animates its wheel to the returned winner. Only one screening per week is
- * allowed (unique weekNumber) — a second attempt gets 409.
+ * Only one screening per week is allowed (unique weekNumber).
  */
-export async function POST() {
+export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return unauthorized();
 
@@ -28,14 +31,63 @@ export async function POST() {
     );
   }
 
+  // Parse optional body — SPIN needs no body, VOTE needs nothing extra, MANUAL needs candidateId.
+  let method: SelectionMethod = "SPIN";
+  let manualCandidateId: string | undefined;
+  try {
+    const body = await req.json();
+    if (body?.method === "VOTE") method = "VOTE";
+    else if (body?.method === "MANUAL") {
+      method = "MANUAL";
+      manualCandidateId = body?.candidateId;
+    }
+  } catch {
+    // No body or unparseable — default to SPIN.
+  }
+
   const candidates = await prisma.candidate.findMany({
     select: { id: true, title: true, metadata: true },
   });
   if (candidates.length === 0) {
-    return conflict("The candidate pool is empty — add movies before spinning.");
+    return conflict("The candidate pool is empty — add movies before selecting.");
   }
 
-  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  let pick: (typeof candidates)[number];
+
+  if (method === "MANUAL") {
+    if (!manualCandidateId) {
+      return badRequest("candidateId is required for manual selection");
+    }
+    const found = candidates.find((c) => c.id === manualCandidateId);
+    if (!found) {
+      return badRequest("Candidate not found in the pool");
+    }
+    pick = found;
+  } else if (method === "VOTE") {
+    // Count votes per candidate, pick the one with the most.
+    const voteCounts = await prisma.vote.groupBy({
+      by: ["candidateId"],
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    });
+    if (voteCounts.length === 0) {
+      return conflict("No votes have been cast yet — vote before locking.");
+    }
+    const top = voteCounts[0];
+    // Check for a tie — if top two have the same count, reject.
+    if (voteCounts.length > 1 && voteCounts[1]._count.id === top._count.id) {
+      return conflict("It's a tied vote — break the tie before locking.");
+    }
+    const found = candidates.find((c) => c.id === top.candidateId);
+    if (!found) {
+      return conflict("The top-voted candidate is no longer in the pool.");
+    }
+    pick = found;
+  } else {
+    // SPIN — random pick.
+    pick = candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
   const pickedMeta = movieMeta(pick.metadata);
 
   const screening = await prisma.$transaction(async (tx) => {
@@ -47,8 +99,7 @@ export async function POST() {
         movieTitle: pick.title,
         candidateId: pick.id,
         selectedByUserId: session.user!.id,
-        // Carry the poster, trailer, and watch links over from the candidate so
-        // they survive the move into the archive (the candidate row is deleted).
+        selectionMethod: method,
         metadata: {
           posterUrl: pickedMeta.posterUrl,
           trailerUrl: pickedMeta.trailerUrl,
@@ -57,6 +108,8 @@ export async function POST() {
       },
     });
     await tx.candidate.delete({ where: { id: pick.id } }).catch(() => {});
+    // Clean up votes for this candidate (and optionally all current votes).
+    await tx.vote.deleteMany({ where: { candidateId: pick.id } });
     return created;
   }).catch(async (error: unknown) => {
     const code = (error as { code?: string }).code;
@@ -77,9 +130,9 @@ export async function POST() {
     );
   }
 
-  // Announce to the WhatsApp group (fire-and-forget; non-fatal on failure).
+  const methodVerb = method === "SPIN" ? "spun" : method === "VOTE" ? "voted" : "picked";
   void sendGroupMessage(
-    `🎬 Movie Night week ${week.weekNumber} of ${week.year} is… "${screening.movieTitle}"!`,
+    `🎬 Movie Night week ${week.weekNumber} of ${week.year} is… "${screening.movieTitle}"! (${methodVerb} by ${session.user!.name ?? "someone"})`,
   ).catch(() => {});
 
   return ok({
@@ -87,6 +140,7 @@ export async function POST() {
       id: screening.id,
       weekNumber: screening.weekNumber,
       movieTitle: screening.movieTitle,
+      selectionMethod: method,
       posterUrl: pickedMeta.posterUrl,
       trailerUrl: pickedMeta.trailerUrl,
       offers: pickedMeta.offers,
@@ -95,9 +149,8 @@ export async function POST() {
 }
 
 /**
- * Unlocks this week's movie so the wheel can be spun again. The screening is
- * removed and the picked title is returned to the candidate pool. Only safe for
- * the current, unrated week — past weeks cannot be reopened.
+ * Unlocks this week's movie so you can choose again. The screening is
+ * removed and the picked title is returned to the candidate pool.
  */
 export async function DELETE() {
   const session = await auth();
@@ -131,7 +184,7 @@ export async function DELETE() {
           source: "MANUAL",
           metadata: {
             ...((existing.metadata as object | null) ?? {}),
-            note: "Restored after resetting this week's spin",
+            note: "Restored after resetting this week's pick",
             posterUrl: restored.posterUrl ?? undefined,
             trailerUrl: restored.trailerUrl ?? undefined,
             offers: restored.offers,
@@ -139,6 +192,8 @@ export async function DELETE() {
         },
       });
       await tx.screening.delete({ where: { id: existing.id } });
+      // Clean up any remaining votes.
+      await tx.vote.deleteMany();
     });
   } catch (error) {
     console.error("[select] reset failed", error);

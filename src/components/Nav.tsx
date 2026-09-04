@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { getUserByEmail } from "@/lib/user";
+import { getUserById } from "@/lib/user";
 import { NavLinks } from "@/components/NavLinks";
 
 export async function Nav() {
   const session = await auth();
-  const user = session?.user?.email ? await getUserByEmail(session.user.email) : null;
+  const user = session?.user?.id ? await getUserById(session.user.id) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
@@ -20,7 +20,7 @@ export async function Nav() {
         <NavLinks
           user={
             user
-              ? { name: user.name, email: user.email, image: user.image }
+              ? { name: user.name, image: user.image }
               : null
           }
         />

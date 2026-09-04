@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getUserByEmail(email: string) {
+export async function getUserById(id: string) {
   return prisma.user.findUnique({
-    where: { email },
-    select: { id: true, name: true, email: true, image: true },
+    where: { id },
+    select: { id: true, name: true, image: true },
   });
 }

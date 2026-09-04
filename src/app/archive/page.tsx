@@ -50,7 +50,7 @@ export default async function ArchivePage() {
         <h1 className="font-display text-5xl tracking-tight sm:text-6xl">Movie archive</h1>
         <p className="mt-5 max-w-xl text-muted">
           Every weekly pick, with the group&apos;s ratings. Rate your favourite nights on a 0–5
-          scale, in quarter-star increments.
+          scale, in two-decimal-star increments.
         </p>
       </div>
 

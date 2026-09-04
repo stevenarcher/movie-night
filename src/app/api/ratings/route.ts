@@ -5,13 +5,7 @@ import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 
 const ratingSchema = z.object({
   screeningId: z.string().min(1),
-  value: z
-    .number()
-    .min(0)
-    .max(5)
-    .refine((v) => Math.abs(v * 4 - Math.round(v * 4)) < 1e-9, {
-      message: "rating must be a multiple of 0.25",
-    }),
+  value: z.number().min(0).max(5).finite(),
 });
 
 export async function POST(request: Request) {
@@ -22,7 +16,7 @@ export async function POST(request: Request) {
   try {
     parsed = ratingSchema.parse(await request.json());
   } catch {
-    return badRequest("`screeningId` and a `value` between 0 and 5 in 0.25 increments are required");
+    return badRequest("`screeningId` and a `value` between 0 and 5 (up to 2 decimal places) are required");
   }
 
   const screening = await prisma.screening.findUnique({
@@ -32,13 +26,15 @@ export async function POST(request: Request) {
     return badRequest("That screening does not exist");
   }
 
+  const value = Math.round(parsed.value * 100) / 100;
+
   try {
     const rating = await prisma.rating.upsert({
       where: {
         userId_screeningId: { userId: session.user.id, screeningId: parsed.screeningId },
       },
-      update: { value: parsed.value },
-      create: { userId: session.user.id, screeningId: parsed.screeningId, value: parsed.value },
+      update: { value },
+      create: { userId: session.user.id, screeningId: parsed.screeningId, value },
     });
     return ok({ rating });
   } catch (error) {

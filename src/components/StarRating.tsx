@@ -41,8 +41,8 @@ export function StarRating({
   pending = false,
   interactive = false,
 }: Props) {
-  const [draft, setDraft] = useState(roundQuarter(value));
-  const [input, setInput] = useState(String(roundQuarter(value)));
+  const [draft, setDraft] = useState(snap(value));
+  const [input, setInput] = useState(String(snap(value)));
   const [hover, setHover] = useState<number | null>(null);
 
   if (!interactive) {
@@ -89,21 +89,25 @@ export function StarRating({
     setInput(String(v));
   }
 
+  function snap(v: number): number {
+    return Math.min(MAX, Math.max(0, Math.round(v * 100) / 100));
+  }
+
   function handleInputChange(raw: string) {
     setInput(raw);
     const parsed = Number(raw);
-    if (!Number.isNaN(parsed)) setDraft(roundQuarter(parsed));
+    if (!Number.isNaN(parsed)) setDraft(snap(parsed));
   }
 
   function commitInput() {
-    const snapped = roundQuarter(Number(input) || 0);
+    const snapped = snap(Number(input) || 0);
     setDraft(snapped);
     setInput(String(snapped));
   }
 
   function submit() {
     if (!dirty) return;
-    onSubmit?.(roundQuarter(draft));
+    onSubmit?.(snap(draft));
   }
 
   return (
@@ -150,7 +154,7 @@ export function StarRating({
           value={input}
           min={0}
           max={MAX}
-          step={STEP}
+          step={0.01}
           onChange={(e) => handleInputChange(e.target.value)}
           onBlur={commitInput}
           onKeyDown={(e) => {

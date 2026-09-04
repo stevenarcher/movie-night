@@ -39,7 +39,7 @@ export function ChooseClient({
   candidates: Candidate[];
 }) {
   const wheelRef = useRef<WheelHandle>(null);
-  const [method, setMethod] = useState<Method>("spin");
+  const [method, setMethod] = useState<Method>("vote");
   const [winner, setWinner] = useState<Winner | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [error, setError] = useState<string | null>(null);

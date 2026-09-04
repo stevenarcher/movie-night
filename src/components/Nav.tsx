@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { SignInButton } from "@/components/SignInButton";
-import { SignOutButton } from "@/components/SignOutButton";
 import { getUserByEmail } from "@/lib/user";
+import { NavLinks } from "@/components/NavLinks";
 
 export async function Nav() {
   const session = await auth();
   const user = session?.user?.email ? await getUserByEmail(session.user.email) : null;
-
-  const initials = (user?.name ?? "?").slice(0, 2).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
@@ -20,38 +17,13 @@ export async function Nav() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.24em]">
-          <Link href="/choose" className="text-muted transition-colors hover:text-accent">
-            Choose
-          </Link>
-          <Link href="/pool" className="text-muted transition-colors hover:text-accent">
-            Pool
-          </Link>
-          <Link href="/archive" className="text-muted transition-colors hover:text-accent">
-            Archive
-          </Link>
-        </nav>
-
-        <div className="ml-auto flex items-center gap-3">
-          {user ? (
-            <>
-              {user.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
-              ) : (
-                <span className="grid h-8 w-8 place-items-center rounded-full border border-accent/50 text-[11px] font-medium text-accent">
-                  {initials}
-                </span>
-              )}
-              <div className="hidden sm:block text-right leading-tight">
-                <p className="text-xs text-muted uppercase tracking-[0.18em]">{user.name}</p>
-              </div>
-              <SignOutButton />
-            </>
-          ) : (
-            <SignInButton />
-          )}
-        </div>
+        <NavLinks
+          user={
+            user
+              ? { name: user.name, email: user.email, image: user.image }
+              : null
+          }
+        />
       </div>
     </header>
   );

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { SignInPrompt } from "@/components/SignInPrompt";
+import { cheapestRental } from "@/lib/movie-meta";
 
 type Offer = {
   type: "RENT" | "BUY" | "STREAM" | "FREE";
@@ -20,8 +21,8 @@ type Candidate = {
   offers: Offer[];
 };
 
-function formatPrice(price: number | null): string {
-  if (price === null) return "Included";
+function formatPrice(price: number | null, type: Offer["type"]): string {
+  if (price === null) return type === "RENT" || type === "BUY" ? "See price" : "Included";
   if (price === 0) return "Free";
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(price);
 }
@@ -242,21 +243,39 @@ export function PoolClient({
 
                 {c.offers.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {c.offers.map((o) => (
-                      <a
-                        key={`${o.provider}-${o.type}`}
-                        href={o.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/60 hover:text-foreground"
-                      >
-                        <span className="rounded bg-panel-2 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
-                          {TYPE_LABEL[o.type] ?? o.type}
-                        </span>
-                        <span>{o.provider}</span>
-                        <span className="text-foreground">{formatPrice(o.price)}</span>
-                      </a>
-                    ))}
+                    {c.offers.map((o) => {
+                      const cheapest = cheapestRental(c.offers);
+                      const isCheapest =
+                        o.type === "RENT"
+                          ? o.price != null && o.price === cheapest
+                          : (o.type === "STREAM" || o.type === "FREE") && cheapest === 0;
+                      const isExpensive = o.type === "RENT" && o.price != null && o.price > 5;
+                      return (
+                        <a
+                          key={`${o.provider}-${o.type}`}
+                          href={o.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-edge px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/60 hover:text-foreground"
+                        >
+                          <span className="rounded bg-panel-2 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                            {TYPE_LABEL[o.type] ?? o.type}
+                          </span>
+                          <span>{o.provider}</span>
+                          <span
+                            className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              isCheapest
+                                ? "bg-accent/15 text-accent"
+                                : isExpensive
+                                  ? "bg-red-500/15 text-red-400"
+                                  : "text-muted"
+                            }`}
+                          >
+                            {formatPrice(o.price, o.type)}
+                          </span>
+                        </a>
+                      );
+                    })}
                   </div>
                 )}
               </div>

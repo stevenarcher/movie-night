@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Wheel, type WheelHandle } from "@/components/Wheel";
 import { SignInPrompt } from "@/components/SignInPrompt";
-import type { Offer } from "@/lib/movie-meta";
+import { cheapestRental, watchLabel, type Offer } from "@/lib/movie-meta";
 
 type Winner = {
   movieTitle: string;
@@ -17,13 +17,6 @@ type Winner = {
 type Candidate = { id: string; title: string; posterUrl: string | null; offers: Offer[] };
 
 type Method = "spin" | "vote" | "pick";
-
-function cheapestRental(offers: Offer[]): number | null {
-  if (offers.some((o) => o.type === "STREAM")) return 0;
-  const rents = offers.filter((o) => o.type === "RENT" && o.price != null);
-  if (rents.length === 0) return null;
-  return Math.min(...rents.map((o) => o.price!));
-}
 
 const METHODS: { key: Method; label: string; description: string }[] = [
   { key: "spin", label: "Spin the wheel", description: "Random pick — let fate decide" },
@@ -228,6 +221,7 @@ export function ChooseClient({
   const priced = prices.filter((p): p is { id: string; price: number } => p.price != null);
   const cheapestPrice = priced.length > 0 ? Math.min(...priced.map((p) => p.price)) : null;
   const cheapestIds = new Set(priced.filter((p) => p.price === cheapestPrice).map((p) => p.id));
+  const labels = new Map(candidates.map((c) => [c.id, watchLabel(c.offers)]));
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -316,6 +310,7 @@ export function ChooseClient({
                 const voted = myVotes.has(c.id);
                 const count = voteCounts.get(c.id) ?? 0;
                 const price = prices.find((p) => p.id === c.id)?.price;
+                const label = labels.get(c.id) ?? null;
                 const isCheapest = cheapestIds.has(c.id);
                 const isExpensive = price != null && price > 5;
                 return (
@@ -333,17 +328,19 @@ export function ChooseClient({
                     )}
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm">{c.title}</span>
-                      {price != null && (
+                      {label != null && (
                         <span
                           className={`mt-0.5 w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            isCheapest
-                              ? "bg-accent/15 text-accent"
-                              : isExpensive
-                                ? "bg-red-500/15 text-red-400"
-                                : "text-muted"
+                            price != null
+                              ? isCheapest
+                                ? "bg-accent/15 text-accent"
+                                : isExpensive
+                                  ? "bg-red-500/15 text-red-400"
+                                  : "text-muted"
+                              : "text-muted"
                           }`}
                         >
-                          {price === 0 ? "Free to stream" : `£${price.toFixed(2)} rental`}
+                          {label}
                         </span>
                       )}
                     </div>
@@ -402,6 +399,7 @@ export function ChooseClient({
             <div className="flex flex-col gap-2">
               {candidates.map((c) => {
                 const price = prices.find((p) => p.id === c.id)?.price;
+                const label = labels.get(c.id) ?? null;
                 const isCheapest = cheapestIds.has(c.id);
                 const isExpensive = price != null && price > 5;
                 return (
@@ -417,17 +415,19 @@ export function ChooseClient({
                     )}
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm">{c.title}</span>
-                      {price != null && (
+                      {label != null && (
                         <span
                           className={`mt-0.5 w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            isCheapest
-                              ? "bg-accent/15 text-accent"
-                              : isExpensive
-                                ? "bg-red-500/15 text-red-400"
-                                : "text-muted"
+                            price != null
+                              ? isCheapest
+                                ? "bg-accent/15 text-accent"
+                                : isExpensive
+                                  ? "bg-red-500/15 text-red-400"
+                                  : "text-muted"
+                              : "text-muted"
                           }`}
                         >
-                          {price === 0 ? "Free to stream" : `£${price.toFixed(2)} rental`}
+                          {label}
                         </span>
                       )}
                     </div>

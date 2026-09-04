@@ -49,11 +49,15 @@ export default async function ChoosePage() {
       ) : (
         <ChooseClient
           signedIn={signedIn}
-          candidates={candidates.map((c) => ({
-            id: c.id,
-            title: c.title,
-            posterUrl: movieMeta(c.metadata).posterUrl,
-          }))}
+          candidates={candidates.map((c) => {
+            const meta = movieMeta(c.metadata);
+            return {
+              id: c.id,
+              title: c.title,
+              posterUrl: meta.posterUrl,
+              offers: meta.offers,
+            };
+          })}
         />
       )}
     </div>

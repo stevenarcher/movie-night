@@ -10,7 +10,7 @@ type UserProps = {
   image: string | null;
 } | null;
 
-export function NavLinks({ user }: { user: UserProps }) {
+export function NavLinks({ user, isAdmin }: { user: UserProps; isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -47,6 +47,11 @@ export function NavLinks({ user }: { user: UserProps }) {
         <Link href="/archive" className="text-muted transition-colors hover:text-accent">
           Archive
         </Link>
+        {isAdmin && (
+          <Link href="/dashboard" className="text-muted transition-colors hover:text-accent">
+            Dashboard
+          </Link>
+        )}
       </nav>
 
       <div className="hidden sm:flex ml-auto items-center gap-3">
@@ -113,6 +118,11 @@ export function NavLinks({ user }: { user: UserProps }) {
             <Link href="/archive" onClick={() => setOpen(false)} className="py-2.5 text-muted transition-colors hover:text-accent">
               Archive
             </Link>
+            {isAdmin && (
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="py-2.5 text-muted transition-colors hover:text-accent">
+                Dashboard
+              </Link>
+            )}
           </nav>
 
           <div className="border-t border-edge px-4 py-4">

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getUserById } from "@/lib/user";
+import { isAdmin } from "@/lib/admin";
 import { NavLinks } from "@/components/NavLinks";
 
 export async function Nav() {
   const session = await auth();
   const user = session?.user?.id ? await getUserById(session.user.id) : null;
+  const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
 
   return (
     <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
@@ -23,6 +25,7 @@ export async function Nav() {
               ? { name: user.name, image: user.image }
               : null
           }
+          isAdmin={admin}
         />
       </div>
     </header>

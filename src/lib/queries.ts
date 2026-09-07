@@ -12,6 +12,14 @@ export const TAG_CANDIDATES = "candidates";
 export const TAG_ARCHIVE = "archive";
 export const TAG_SELECTION = "selection";
 
+// Keep the serialized "where to watch" chips bounded — a handful of providers
+// is plenty for the UI and keeps the RSC payload per movie small.
+const MAX_OFFERS = 10;
+
+function capOffers(offers: Offer[]): Offer[] {
+  return offers.length > MAX_OFFERS ? offers.slice(0, MAX_OFFERS) : offers;
+}
+
 // ---------------------------------------------------------------------------
 // Candidate pool (shared by /pool and /choose)
 // ---------------------------------------------------------------------------
@@ -19,10 +27,8 @@ export const TAG_SELECTION = "selection";
 export type CachedCandidate = {
   id: string;
   title: string;
-  normalizedTitle: string;
   source: "WHATSAPP" | "MANUAL";
   createdAt: string;
-  senderName: string | null;
   posterUrl: string | null;
   trailerUrl: string | null;
   offers: Offer[];
@@ -35,10 +41,8 @@ export const getCandidates = unstable_cache(
       select: {
         id: true,
         title: true,
-        normalizedTitle: true,
         source: true,
         createdAt: true,
-        senderName: true,
         metadata: true,
       },
     });
@@ -47,13 +51,11 @@ export const getCandidates = unstable_cache(
       return {
         id: c.id,
         title: c.title,
-        normalizedTitle: c.normalizedTitle,
         source: c.source,
         createdAt: c.createdAt.toISOString(),
-        senderName: c.senderName,
         posterUrl: meta.posterUrl,
         trailerUrl: meta.trailerUrl,
-        offers: meta.offers,
+        offers: capOffers(meta.offers),
       };
     });
   },
@@ -99,7 +101,7 @@ export const getLockedScreening = unstable_cache(
       selectedByName: s.selectedBy?.name ?? null,
       posterUrl: meta.posterUrl,
       trailerUrl: meta.trailerUrl,
-      offers: meta.offers,
+      offers: capOffers(meta.offers),
     };
   },
   ["locked-screening"],
@@ -162,7 +164,7 @@ export const getArchive = unstable_cache(
         watchOnVC: s.watchOnVC,
         posterUrl: meta.posterUrl,
         trailerUrl: meta.trailerUrl,
-        offers: meta.offers,
+        offers: capOffers(meta.offers),
         averageRating: average === null ? null : Math.round(average * 100) / 100,
         ratingCount: count,
       });

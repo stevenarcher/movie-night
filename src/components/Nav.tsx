@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { getUserById } from "@/lib/user";
-import { isAdmin } from "@/lib/admin";
+import { getUserNav } from "@/lib/user";
 import { NavLinks } from "@/components/NavLinks";
 
 export async function Nav() {
   const session = await auth();
-  const user = session?.user?.id ? await getUserById(session.user.id) : null;
-  const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
+  const nav = session?.user?.id ? await getUserNav(session.user.id) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-edge bg-background/80 backdrop-blur">
@@ -21,11 +19,11 @@ export async function Nav() {
 
         <NavLinks
           user={
-            user
-              ? { name: user.name, image: user.image }
+            nav
+              ? { name: nav.name, image: nav.image }
               : null
           }
-          isAdmin={admin}
+          isAdmin={nav?.isAdmin ?? false}
         />
       </div>
     </header>

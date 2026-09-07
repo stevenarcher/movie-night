@@ -4,6 +4,8 @@ import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 import { isAdmin } from "@/lib/admin";
 import { validateTitle } from "@/whatsapp/validate";
 import { tmdbMeta, tmdbOffers } from "@/lib/tmdb";
+import { revalidateTag } from "next/cache";
+import { TAG_CANDIDATES } from "@/lib/queries";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -50,6 +52,7 @@ export async function POST(request: Request) {
         },
       },
     });
+    revalidateTag(TAG_CANDIDATES, "max");
     return ok({ candidate });
   } catch (error) {
     console.error("[dashboard/pool] create failed", error);

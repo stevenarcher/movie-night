@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import { currentWeek } from "@/lib/week";
+import { getCandidates, getCurrentLockedScreening } from "@/lib/queries";
 import { SignInButton } from "@/components/SignInButton";
 
 export const dynamic = "force-dynamic";
@@ -13,14 +12,14 @@ export default async function Home() {
   let currentScreening: { movieTitle: string; weekNumber: number } | null = null;
 
   if (session?.user?.id) {
-    const week = currentWeek();
-    [poolCount, currentScreening] = await Promise.all([
-      prisma.candidate.count(),
-      prisma.screening.findUnique({
-        where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
-        select: { movieTitle: true, weekNumber: true },
-      }),
+    const [candidates, locked] = await Promise.all([
+      getCandidates(),
+      getCurrentLockedScreening(),
     ]);
+    poolCount = candidates.length;
+    currentScreening = locked
+      ? { movieTitle: locked.movieTitle, weekNumber: locked.weekNumber }
+      : null;
   }
 
   return (

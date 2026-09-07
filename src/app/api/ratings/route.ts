@@ -2,6 +2,8 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
+import { revalidateTag } from "next/cache";
+import { TAG_ARCHIVE } from "@/lib/queries";
 
 const ratingSchema = z.object({
   screeningId: z.string().min(1),
@@ -36,6 +38,7 @@ export async function POST(request: Request) {
       update: { value },
       create: { userId: session.user.id, screeningId: parsed.screeningId, value },
     });
+    revalidateTag(TAG_ARCHIVE, "max");
     return ok({ rating });
   } catch (error) {
     console.error("[ratings] upsert failed", error);

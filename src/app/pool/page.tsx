@@ -1,14 +1,12 @@
 import { currentUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import { movieMeta } from "@/lib/movie-meta";
+import { getCandidates } from "@/lib/queries";
 import { PoolClient } from "@/components/PoolClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function PoolPage() {
   const user = await currentUser();
-
-  const candidates = await prisma.candidate.findMany({ orderBy: { createdAt: "asc" } });
+  const candidates = await getCandidates();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
@@ -24,18 +22,7 @@ export default async function PoolPage() {
       <PoolClient
         signedIn={Boolean(user)}
         canSimulate={process.env.NODE_ENV !== "production"}
-        initialCandidates={candidates.map((c) => {
-          const meta = movieMeta(c.metadata);
-          return {
-            id: c.id,
-            title: c.title,
-            source: c.source,
-            createdAt: c.createdAt.toISOString(),
-            posterUrl: meta.posterUrl,
-            trailerUrl: meta.trailerUrl,
-            offers: meta.offers,
-          };
-        })}
+        initialCandidates={candidates}
       />
     </div>
   );

@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { badRequest, ok, unauthorized } from "@/lib/api";
 import { isAdmin } from "@/lib/admin";
+import { revalidateTag } from "next/cache";
+import { TAG_CANDIDATES } from "@/lib/queries";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -15,6 +17,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   try {
     await prisma.candidate.delete({ where: { id } });
+    revalidateTag(TAG_CANDIDATES, "max");
     return ok({ ok: true });
   } catch {
     return badRequest("Candidate not found or already removed");

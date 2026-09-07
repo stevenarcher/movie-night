@@ -3,6 +3,8 @@ import { validateTitle } from "./validate";
 import type { IngestResult, ParsedInboundMessage } from "./types";
 import { MAX_POOL_SIZE } from "./validate";
 import { tmdbPoster } from "@/lib/tmdb";
+import { revalidateTag } from "next/cache";
+import { TAG_CANDIDATES } from "@/lib/queries";
 
 /**
  * Writes parsed WhatsApp messages into the candidate pool.
@@ -77,6 +79,8 @@ export async function ingestWhatsappMessages(
       result.results.push({ status: "duplicate" });
     }
   }
+
+  if (result.created > 0) revalidateTag(TAG_CANDIDATES, "max");
 
   return result;
 }

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 import { isAdmin } from "@/lib/admin";
 import { tmdbMeta, tmdbOffers } from "@/lib/tmdb";
+import { revalidateTag } from "next/cache";
+import { TAG_ARCHIVE, TAG_CANDIDATES } from "@/lib/queries";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
           },
         },
       });
+      revalidateTag(TAG_CANDIDATES, "max");
       return ok({ metadata: updated.metadata });
     }
 
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
         },
       },
     });
+    revalidateTag(TAG_ARCHIVE, "max");
     return ok({ metadata: updated.metadata });
   } catch (error) {
     console.error("[dashboard/enrich] failed", error);

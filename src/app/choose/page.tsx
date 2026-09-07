@@ -1,7 +1,7 @@
 import { currentUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { getCandidates, getLockedScreening } from "@/lib/queries";
 import { currentWeek } from "@/lib/week";
-import { movieMeta, type MovieMeta } from "@/lib/movie-meta";
+import type { MovieMeta } from "@/lib/movie-meta";
 import { ChooseClient } from "@/components/ChooseClient";
 import { ResetPickButton } from "@/components/ResetPickButton";
 import { SignInPrompt } from "@/components/SignInPrompt";
@@ -14,17 +14,8 @@ export default async function ChoosePage() {
 
   const week = currentWeek();
   const [candidates, locked] = await Promise.all([
-    prisma.candidate.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.screening.findUnique({
-      where: { year_weekNumber: { year: week.year, weekNumber: week.weekNumber } },
-      select: {
-        movieTitle: true,
-        weekNumber: true,
-        metadata: true,
-        selectionMethod: true,
-        selectedBy: { select: { name: true } },
-      },
-    }),
+    getCandidates(),
+    getLockedScreening(week.year, week.weekNumber),
   ]);
 
   return (
@@ -42,22 +33,19 @@ export default async function ChoosePage() {
           signedIn={signedIn}
           movieTitle={locked.movieTitle}
           weekNumber={locked.weekNumber}
-          meta={movieMeta(locked.metadata)}
+          meta={{ posterUrl: locked.posterUrl, trailerUrl: locked.trailerUrl, offers: locked.offers }}
           selectionMethod={locked.selectionMethod}
-          selectedByName={locked.selectedBy?.name ?? null}
+          selectedByName={locked.selectedByName}
         />
       ) : (
         <ChooseClient
           signedIn={signedIn}
-          candidates={candidates.map((c) => {
-            const meta = movieMeta(c.metadata);
-            return {
-              id: c.id,
-              title: c.title,
-              posterUrl: meta.posterUrl,
-              offers: meta.offers,
-            };
-          })}
+          candidates={candidates.map((c) => ({
+            id: c.id,
+            title: c.title,
+            posterUrl: c.posterUrl,
+            offers: c.offers,
+          }))}
         />
       )}
     </div>

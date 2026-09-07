@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { getUserNav } from "@/lib/user";
 import { NavLinks } from "@/components/NavLinks";
 
 export async function Nav() {
-  const session = await auth();
+  const session = await getSession();
   const nav = session?.user?.id ? await getUserNav(session.user.id) : null;
 
   return (

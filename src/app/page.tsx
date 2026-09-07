@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { currentWeek } from "@/lib/week";
 import { SignInButton } from "@/components/SignInButton";
@@ -7,7 +7,7 @@ import { SignInButton } from "@/components/SignInButton";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   let poolCount = 0;
   let currentScreening: { movieTitle: string; weekNumber: number } | null = null;

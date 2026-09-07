@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
@@ -14,7 +14,7 @@ export async function isAdmin(userId: string): Promise<boolean> {
 }
 
 export async function requireAdmin() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) redirect("/");
   const admin = await isAdmin(session.user.id);
   if (!admin) redirect("/");

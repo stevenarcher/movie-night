@@ -2,6 +2,7 @@ import { currentUser } from "@/lib/session";
 import { getCandidates, getLockedScreening } from "@/lib/queries";
 import { currentWeek } from "@/lib/week";
 import type { MovieMeta } from "@/lib/movie-meta";
+import Image from "next/image";
 import { ChooseClient } from "@/components/ChooseClient";
 import { ResetPickButton } from "@/components/ResetPickButton";
 import { SignInPrompt } from "@/components/SignInPrompt";
@@ -86,11 +87,14 @@ function LockedPanel({
   return (
     <div className="mx-auto max-w-md overflow-hidden rounded-xl border border-edge bg-panel">
       {meta.posterUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={meta.posterUrl}
           alt={`${movieTitle} poster`}
+          width={500}
+          height={750}
+          priority
           className="h-64 w-full border-b border-edge object-cover"
+          sizes="(max-width: 448px) 100vw, 448px"
         />
       )}
       <div className="p-10 text-center">

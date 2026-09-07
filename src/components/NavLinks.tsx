@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { SignInButton } from "@/components/SignInButton";
 import { SignOutButton } from "@/components/SignOutButton";
 
@@ -58,8 +59,7 @@ export function NavLinks({ user, isAdmin }: { user: UserProps; isAdmin: boolean 
         {user ? (
           <>
             {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
+              <Image src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
             ) : (
               <span className="grid h-8 w-8 place-items-center rounded-full border border-accent/50 text-[11px] font-medium text-accent">
                 {initials}
@@ -129,8 +129,7 @@ export function NavLinks({ user, isAdmin }: { user: UserProps; isAdmin: boolean 
             {user ? (
               <div className="flex items-center gap-3">
                 {user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
+                  <Image src={user.image} alt={user.name ?? "User"} width={30} height={30} className="rounded-full border border-edge" />
                 ) : (
                   <span className="grid h-8 w-8 place-items-center rounded-full border border-accent/50 text-[11px] font-medium text-accent">
                     {initials}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { StarRating } from "@/components/StarRating";
 import { SignInButton } from "@/components/SignInButton";
 import type { Offer } from "@/lib/movie-meta";
@@ -154,12 +155,14 @@ export function ArchiveClient({ signedIn, initialScreenings }: Props) {
             >
               <div className="flex min-w-0 flex-1 gap-4">
                 {s.posterUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={s.posterUrl}
                     alt={`${s.movieTitle} poster`}
+                    width={74}
+                    height={110}
                     loading="lazy"
                     className="h-[110px] w-[74px] shrink-0 self-start rounded-md border border-edge object-cover"
+                    sizes="74px"
                   />
                 )}
 

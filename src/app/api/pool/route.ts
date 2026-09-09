@@ -1,30 +1,24 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { movieMeta } from "@/lib/movie-meta";
 import { badRequest, ok, serverError, unauthorized } from "@/lib/api";
 import { validateTitle } from "@/whatsapp/validate";
 import { tmdbPoster } from "@/lib/tmdb";
+import { revalidateTag } from "next/cache";
+import { getCandidates, TAG_CANDIDATES } from "@/lib/queries";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return unauthorized();
 
-  const rows = await prisma.candidate.findMany({
-    orderBy: { createdAt: "asc" },
-    select: { id: true, title: true, source: true, createdAt: true, metadata: true },
-  });
-
-  const candidates = rows.map((c) => {
-    const meta = movieMeta(c.metadata);
-    return {
-      id: c.id,
-      title: c.title,
-      source: c.source,
-      createdAt: c.createdAt,
-      posterUrl: meta.posterUrl,
-      offers: meta.offers,
-    };
-  });
+  const cached = await getCandidates();
+  const candidates = cached.map((c) => ({
+    id: c.id,
+    title: c.title,
+    source: c.source,
+    createdAt: c.createdAt,
+    posterUrl: c.posterUrl,
+    offers: c.offers,
+  }));
 
   return ok({ candidates, count: candidates.length });
 }
@@ -67,6 +61,7 @@ export async function POST(request: Request) {
         metadata: { posterUrl: posterUrl ?? undefined },
       },
     });
+    revalidateTag(TAG_CANDIDATES, "max");
     return ok({ candidate });
   } catch (error) {
     console.error("[pool] create failed", error);

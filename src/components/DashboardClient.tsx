@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 export type UserView = {
@@ -171,8 +172,7 @@ export function DashboardClient({
                   <tr key={u.id} className="border-b border-edge last:border-0">
                     <td className="flex items-center gap-3 px-4 py-3">
                       {u.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={u.image}
                           alt={u.name ?? "User"}
                           width={28}
@@ -239,12 +239,14 @@ export function DashboardClient({
                 className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
               >
                 {c.posterUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={c.posterUrl}
                     alt={`${c.title} poster`}
+                    width={85}
+                    height={128}
                     loading="lazy"
                     className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-edge object-cover"
+                    sizes="85px"
                   />
                 ) : (
                   <div className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-dashed border-edge bg-panel-2" />
@@ -320,12 +322,14 @@ export function DashboardClient({
                 className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
               >
                 {s.posterUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={s.posterUrl}
                     alt={`${s.movieTitle} poster`}
+                    width={85}
+                    height={128}
                     loading="lazy"
                     className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-edge object-cover"
+                    sizes="85px"
                   />
                 ) : (
                   <div className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-dashed border-edge bg-panel-2" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Image from "next/image";
 import { SignInPrompt } from "@/components/SignInPrompt";
 import { cheapestRental } from "@/lib/movie-meta";
 
@@ -200,12 +201,14 @@ export function PoolClient({
               className="flex gap-4 rounded-xl border border-edge bg-panel p-4"
             >
               {c.posterUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={c.posterUrl}
                   alt={`${c.title} poster`}
+                  width={85}
+                  height={128}
                   loading="lazy"
                   className="h-[128px] w-[85px] shrink-0 self-start rounded-md border border-edge object-cover"
+                  sizes="85px"
                 />
               )}
 

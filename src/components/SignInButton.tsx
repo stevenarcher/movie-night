@@ -1,7 +1,11 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-
+/**
+ * Sign-in without pulling in next-auth/react. The react client's `signIn`
+ * helper drags in a context provider and a chunk of hooks that signed-out
+ * visitors never use, yet it's bundled into every public page's JS ship.
+ * This reimplements the same CSRF + POST protocol the helper uses.
+ */
 export function SignInButton({
   label = "Sign in",
   callbackUrl = "/choose",
@@ -12,7 +16,20 @@ export function SignInButton({
   return (
     <button
       type="button"
-      onClick={() => signIn("google", { callbackUrl })}
+      onClick={async () => {
+        const csrfRes = await fetch("/api/auth/csrf");
+        const { csrfToken } = (await csrfRes.json()) as { csrfToken: string };
+        const res = await fetch("/api/auth/signin/google", {
+          method: "post",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Auth-Return-Redirect": "1",
+          },
+          body: new URLSearchParams({ csrfToken, callbackUrl }),
+        });
+        const data = (await res.json()) as { url?: string };
+        window.location.href = data.url ?? callbackUrl;
+      }}
       className="inline-flex items-center gap-2.5 rounded-full border border-accent/50 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-background"
     >
       <GoogleIcon />

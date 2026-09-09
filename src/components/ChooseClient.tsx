@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Wheel, type WheelHandle } from "@/components/Wheel";
 import { SignInPrompt } from "@/components/SignInPrompt";
@@ -321,8 +322,7 @@ export function ChooseClient({
                     }`}
                   >
                     {c.posterUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.posterUrl} alt="" className="h-10 w-7 rounded object-cover" />
+                      <Image src={c.posterUrl} alt="" width={28} height={40} className="h-10 w-7 rounded object-cover" />
                     ) : (
                       <div className="h-10 w-7 rounded bg-panel-2" />
                     )}
@@ -408,8 +408,7 @@ export function ChooseClient({
                     className="flex items-center gap-3 rounded-xl border border-edge bg-panel px-4 py-3 transition-colors hover:border-accent/40"
                   >
                     {c.posterUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.posterUrl} alt="" className="h-10 w-7 rounded object-cover" />
+                      <Image src={c.posterUrl} alt="" width={28} height={40} className="h-10 w-7 rounded object-cover" />
                     ) : (
                       <div className="h-10 w-7 rounded bg-panel-2" />
                     )}
@@ -464,11 +463,13 @@ export function ChooseClient({
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-sm overflow-hidden rounded-xl border border-edge bg-panel shadow-2xl">
             {winner.posterUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={winner.posterUrl}
                 alt={`${winner.movieTitle} poster`}
+                width={500}
+                height={750}
                 className="h-56 w-full border-b border-edge object-cover"
+                sizes="(max-width: 448px) 100vw, 448px"
               />
             )}
             <div className="p-8 text-center">

@@ -5,6 +5,8 @@ import { movieMeta } from "@/lib/movie-meta";
 import { sendGroupMessage } from "@/whatsapp/send";
 import { normalizeTitle } from "@/whatsapp/normalize";
 import { badRequest, conflict, ok, serverError, unauthorized } from "@/lib/api";
+import { revalidateTag } from "next/cache";
+import { TAG_ARCHIVE, TAG_CANDIDATES, TAG_SELECTION } from "@/lib/queries";
 
 import type { SelectionMethod } from "@prisma/client";
 
@@ -131,6 +133,9 @@ export async function POST(req: Request) {
   }
 
   const methodVerb = method === "SPIN" ? "spun" : method === "VOTE" ? "voted" : "picked";
+  revalidateTag(TAG_CANDIDATES, "max");
+  revalidateTag(TAG_SELECTION, "max");
+  revalidateTag(TAG_ARCHIVE, "max");
   void sendGroupMessage(
     `🎬 Movie Night week ${week.weekNumber} of ${week.year} is… "${screening.movieTitle}"! (${methodVerb} by ${session.user!.name ?? "someone"})`,
   ).catch(() => {});
@@ -199,6 +204,10 @@ export async function DELETE() {
     console.error("[select] reset failed", error);
     return serverError("Failed to reset the week");
   }
+
+  revalidateTag(TAG_CANDIDATES, "max");
+  revalidateTag(TAG_SELECTION, "max");
+  revalidateTag(TAG_ARCHIVE, "max");
 
   return ok({ removed: existing.movieTitle });
 }

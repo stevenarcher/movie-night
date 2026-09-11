@@ -16,6 +16,15 @@ datasource db {
 // Auth (Auth.js Prisma adapter models)
 // ---------------------------------------------------------------------------
 
+/// Account lifecycle: ADMIN (single dashboard user), MEMBER (signed-in group
+/// member), PENDING (a pre-provisioned identity awaiting its first Google
+/// login — created from spreadsheet history, claimed in the adapter).
+enum UserRole {
+  ADMIN
+  MEMBER
+  PENDING
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String?
@@ -23,6 +32,7 @@ model User {
   emailVerified DateTime?
   image         String?
   googleId      String?  @unique
+  role          UserRole @default(MEMBER)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

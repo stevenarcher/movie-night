@@ -1,16 +1,16 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import type { UserRole } from "@prisma/client";
 
-const ADMIN_GOOGLE_ID = process.env.ADMIN_GOOGLE_ID;
+const ADMIN_ROLE: UserRole = "ADMIN";
 
 export async function isAdmin(userId: string): Promise<boolean> {
-  if (!ADMIN_GOOGLE_ID) return false;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { googleId: true },
+    select: { role: true },
   });
-  return user?.googleId === ADMIN_GOOGLE_ID;
+  return user?.role === ADMIN_ROLE;
 }
 
 export async function requireAdmin() {

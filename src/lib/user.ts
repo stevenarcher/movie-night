@@ -7,22 +7,20 @@ export async function getUserById(id: string) {
   });
 }
 
-const ADMIN_GOOGLE_ID = process.env.ADMIN_GOOGLE_ID;
-
 /**
  * Fetches a user's display data and admin flag in a single query. The Nav
- * needs both `name`/`image` (avatar) and `googleId` (admin check); combining
- * them avoids two separate round-trips to the same User row on every request.
+ * needs both `name`/`image` (avatar) and `role` (admin check); combining them
+ * avoids two separate round-trips to the same User row on every request.
  */
 export async function getUserNav(id: string) {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, image: true, googleId: true },
+    select: { id: true, name: true, image: true, role: true },
   });
   if (!user) return null;
   return {
     name: user.name,
     image: user.image,
-    isAdmin: Boolean(ADMIN_GOOGLE_ID) && user.googleId === ADMIN_GOOGLE_ID,
+    isAdmin: user.role === "ADMIN",
   };
 }

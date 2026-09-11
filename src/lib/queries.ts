@@ -189,3 +189,54 @@ export async function getCurrentLockedScreening() {
   const week = currentWeek();
   return getLockedScreening(week.year, week.weekNumber);
 }
+
+// ---------------------------------------------------------------------------
+// Landing-page facts: derived from the cached archive so the numbers stay in
+// sync with what /archive shows. Only watch-on-VC films count.
+// ---------------------------------------------------------------------------
+
+export type LandingFacts = {
+  mostSeenActor: { name: string; count: number; films: string[] } | null;
+  bestRatedFilm: { movieTitle: string; average: number; count: number } | null;
+};
+
+export async function getLandingFacts(): Promise<LandingFacts> {
+  const { screenings } = await getArchive();
+  const vc = screenings.filter((s) => s.watchOnVC);
+
+  const actorCounts = new Map<string, number>();
+  const actorFilms = new Map<string, Set<string>>();
+  for (const s of vc) {
+    for (const name of s.actors) {
+      actorCounts.set(name, (actorCounts.get(name) ?? 0) + 1);
+      const set = actorFilms.get(name) ?? new Set<string>();
+      set.add(s.movieTitle);
+      actorFilms.set(name, set);
+    }
+  }
+  const maxActorCount = Math.max(0, ...actorCounts.values());
+  const topActors = [...actorCounts.entries()]
+    .filter(([, count]) => count === maxActorCount && maxActorCount > 0)
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b));
+  const mostSeenActor =
+    topActors.length > 0
+      ? {
+          name: topActors.join(" & "),
+          count: maxActorCount,
+          films: [...new Set(topActors.flatMap((name) => [...(actorFilms.get(name) ?? [])]))],
+        }
+      : null;
+
+  const rated = vc
+    .filter((s) => s.averageRating !== null)
+    .map((s) => ({
+      movieTitle: s.movieTitle,
+      average: s.averageRating as number,
+      count: s.ratingCount,
+    }))
+    .sort((a, b) => b.average - a.average || b.count - a.count || a.movieTitle.localeCompare(b.movieTitle));
+  const bestRatedFilm = rated[0] ?? null;
+
+  return { mostSeenActor, bestRatedFilm };
+}

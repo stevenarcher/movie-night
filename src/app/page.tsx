@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { getCandidates, getCurrentLockedScreening } from "@/lib/queries";
+import { getCandidates, getCurrentLockedScreening, getLandingFacts } from "@/lib/queries";
 import { SignInButton } from "@/components/SignInButton";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +21,8 @@ export default async function Home() {
       ? { movieTitle: locked.movieTitle, weekNumber: locked.weekNumber }
       : null;
   }
+
+  const facts = await getLandingFacts();
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-24 sm:py-32">
@@ -58,6 +60,39 @@ export default async function Home() {
           Every pick is archived. Rate them 1–5 stars and see the group&apos;s verdict.
         </Feature>
       </section>
+
+      {(facts.mostSeenActor || facts.bestRatedFilm) && (
+        <section className="mt-24 w-full">
+          <p className="eyebrow mb-4">By the numbers</p>
+          <div className="grid w-full gap-px overflow-hidden rounded-2xl border border-edge bg-edge sm:grid-cols-2">
+            {facts.mostSeenActor && (
+              <Fact
+                label="Most watched actor"
+                title={facts.mostSeenActor.name}
+                meta={`in ${facts.mostSeenActor.count} film${facts.mostSeenActor.count === 1 ? "" : "s"}`}
+              >
+                <ul className="mt-3 flex flex-wrap gap-1.5">
+                  {facts.mostSeenActor.films.map((film) => (
+                    <li
+                      key={film}
+                      className="rounded-full border border-edge px-2.5 py-0.5 text-[11px] uppercase tracking-[0.12em] text-foreground"
+                    >
+                      {film}
+                    </li>
+                  ))}
+                </ul>
+              </Fact>
+            )}
+            {facts.bestRatedFilm && (
+              <Fact
+                label="Highest rated"
+                title={facts.bestRatedFilm.movieTitle}
+                meta={`${facts.bestRatedFilm.average.toFixed(2)} · ${facts.bestRatedFilm.count} rating${facts.bestRatedFilm.count === 1 ? "" : "s"}`}
+              />
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -70,6 +105,17 @@ function Feature({ number, title, children }: { number: string; title: string; c
       </div>
       <h2 className="font-display mt-3 text-2xl">{title}</h2>
       <p className="mt-3 text-sm leading-relaxed text-muted">{children}</p>
+    </div>
+  );
+}
+
+function Fact({ label, title, meta, children }: { label: string; title: string; meta: string; children?: React.ReactNode }) {
+  return (
+    <div className="bg-panel p-6">
+      <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">{label}</p>
+      <p className="font-display mt-3 truncate text-3xl sm:text-4xl">{title}</p>
+      <p className="mt-2 text-sm text-muted">{meta}</p>
+      {children}
     </div>
   );
 }

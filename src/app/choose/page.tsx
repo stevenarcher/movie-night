@@ -34,7 +34,7 @@ export default async function ChoosePage() {
           signedIn={signedIn}
           movieTitle={locked.movieTitle}
           weekNumber={locked.weekNumber}
-          meta={{ posterUrl: locked.posterUrl, trailerUrl: locked.trailerUrl, offers: locked.offers }}
+          meta={{ posterUrl: locked.posterUrl, trailerUrl: locked.trailerUrl, offers: locked.offers, actors: [], directors: [] }}
           selectionMethod={locked.selectionMethod}
           selectedByName={locked.selectedByName}
         />

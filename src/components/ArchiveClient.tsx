@@ -16,6 +16,8 @@ export type ScreeningView = {
   posterUrl: string | null;
   trailerUrl: string | null;
   offers: Offer[];
+  actors: string[];
+  directors: string[];
   averageRating: number | null;
   ratingCount: number;
   myRating: number | null;
@@ -48,6 +50,10 @@ export function ArchiveClient({ signedIn, initialScreenings }: Props) {
   );
   const top = yearRankings.top;
   const bottom = yearRankings.bottom;
+
+  const yearCast = computeRecurringActors(
+    screenings.filter((s) => s.watchOnVC && s.year === year),
+  );
 
   async function refresh() {
     const res = await fetch("/api/archive");
@@ -140,6 +146,8 @@ export function ArchiveClient({ signedIn, initialScreenings }: Props) {
         </section>
       )}
 
+      {visible.length > 0 && <CastCard year={year} actors={yearCast} />}
+
       {visible.length === 0 ? (
         <div className="rounded-xl border border-dashed border-edge bg-panel-2 p-14 text-center text-muted">
           <p className="font-display text-3xl italic">The reel is empty</p>
@@ -173,6 +181,12 @@ export function ArchiveClient({ signedIn, initialScreenings }: Props) {
                   </span>
                   <h2 className="font-display truncate text-xl">{s.movieTitle}</h2>
                 </div>
+
+                {s.directors.length > 0 && (
+                  <p className="mt-1.5 pl-1 text-xs italic text-muted">
+                    Directed by {s.directors.join(", ")}
+                  </p>
+                )}
 
                 {s.trailerUrl && (
                   <a
@@ -278,6 +292,49 @@ function computeRankings(screenings: ScreeningView[]): { top: RankingView[]; bot
   }
   const rows = [...byTitle.values()].sort((a, b) => b.average - a.average || b.count - a.count);
   return { top: rows.slice(0, 5), bottom: [...rows].reverse().slice(0, 5) };
+}
+
+function computeRecurringActors(screenings: ScreeningView[]): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const s of screenings) {
+    for (const actor of s.actors) {
+      counts.set(actor, (counts.get(actor) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+function CastCard({ year, actors }: { year: number; actors: { name: string; count: number }[] }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-edge bg-panel">
+      <div className="border-b border-edge px-5 py-4">
+        <h2 className="font-display text-2xl">Frequent faces</h2>
+        <p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted">
+          Actors in the most {year} films
+        </p>
+      </div>
+      {actors.length === 0 ? (
+        <p className="p-5 pt-4 text-sm text-muted">Unique actors in each film.</p>
+      ) : (
+        <ul className="flex flex-wrap gap-1.5 p-5 pt-4">
+          {actors.map((a) => (
+            <li
+              key={a.name}
+              className="flex items-center gap-1.5 rounded-full border border-edge px-3 py-1 text-sm"
+            >
+              <span className="min-w-0">{a.name}</span>
+              <span className="shrink-0 font-mono text-xs tracking-widest text-accent">
+                ×{a.count}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 function RankingCard({ title, rows }: { title: string; rows: RankingView[] }) {

@@ -56,8 +56,23 @@ describe("movieMeta", () => {
   });
 
   it("ignores malformed metadata", () => {
-    expect(movieMeta(null)).toEqual({ posterUrl: null, trailerUrl: null, offers: [] });
+    expect(movieMeta(null)).toEqual({ posterUrl: null, trailerUrl: null, offers: [], actors: [], directors: [] });
     expect(movieMeta({ offers: "nope" }).offers).toEqual([]);
     expect(movieMeta({ posterUrl: 42, trailerUrl: undefined }).offers).toEqual([]);
+  });
+
+  it("parses and normalises the actors and directors lists", () => {
+    const meta = movieMeta({
+      actors: ["  Colm Meaney  ", " Donal Logue", "Colm Meaney", ""],
+      directors: [" Stephen Frears ", "Stephen Frears"],
+    });
+    expect(meta.actors).toEqual(["Colm Meaney", "Donal Logue"]);
+    expect(meta.directors).toEqual(["Stephen Frears"]);
+  });
+
+  it("treats absent or malformed cast fields as empty lists", () => {
+    expect(movieMeta({}).actors).toEqual([]);
+    expect(movieMeta({ actors: "nope", directors: 42 }).actors).toEqual([]);
+    expect(movieMeta({ actors: "nope" }).directors).toEqual([]);
   });
 });

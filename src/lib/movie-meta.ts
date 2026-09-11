@@ -9,18 +9,36 @@ export type MovieMeta = {
   posterUrl: string | null;
   trailerUrl: string | null;
   offers: Offer[];
+  actors: string[];
+  directors: string[];
 };
 
 const OFFER_TYPES = ["RENT", "BUY", "STREAM", "FREE"] as const;
 
+/** Normalises an array-ish field: keeps trimmed non-empty strings, deduped. */
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const names = value
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter((n) => n.length > 0);
+  return names.filter((n, i) => names.indexOf(n) === i);
+}
+
 /**
  * Normalises the free-form `metadata` JSON that both Candidates (pool) and
- * Screenings (weekly picks) may carry: a poster URL, a YouTube trailer URL, and
- * an array of "where to watch" offers. Unknown/absent fields fall back to safe
- * defaults so every consumer renders consistently.
+ * Screenings (weekly picks) may carry: a poster URL, a YouTube trailer URL, an
+ * array of "where to watch" offers, the main acting cast, and the director(s).
+ * Unknown/absent fields fall back to safe defaults so every consumer renders
+ * consistently.
  */
 export function movieMeta(metadata: unknown): MovieMeta {
-  const m = (metadata ?? {}) as { posterUrl?: unknown; trailerUrl?: unknown; offers?: unknown };
+  const m = (metadata ?? {}) as {
+    posterUrl?: unknown;
+    trailerUrl?: unknown;
+    offers?: unknown;
+    actors?: unknown;
+    directors?: unknown;
+  };
   const rawOffers = Array.isArray(m.offers) ? m.offers : [];
   const offers: Offer[] = rawOffers.map((o) => {
     const offer = (o ?? {}) as {
@@ -43,6 +61,8 @@ export function movieMeta(metadata: unknown): MovieMeta {
     posterUrl: typeof m.posterUrl === "string" && m.posterUrl ? m.posterUrl : null,
     trailerUrl: typeof m.trailerUrl === "string" && m.trailerUrl ? m.trailerUrl : null,
     offers,
+    actors: stringList(m.actors),
+    directors: stringList(m.directors),
   };
 }
 

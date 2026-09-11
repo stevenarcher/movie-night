@@ -105,6 +105,8 @@ export async function POST(req: Request) {
         metadata: {
           posterUrl: pickedMeta.posterUrl,
           trailerUrl: pickedMeta.trailerUrl,
+          actors: pickedMeta.actors,
+          directors: pickedMeta.directors,
           offers: pickedMeta.offers,
         },
       },

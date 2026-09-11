@@ -48,6 +48,8 @@ export async function POST(request: Request) {
         metadata: {
           posterUrl: meta.posterUrl ?? undefined,
           trailerUrl: meta.trailerUrl ?? undefined,
+          actors: meta.actors.length > 0 ? meta.actors : undefined,
+          directors: meta.directors.length > 0 ? meta.directors : undefined,
           offers,
         },
       },

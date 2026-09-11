@@ -31,6 +31,8 @@ export default async function ArchivePage() {
     posterUrl: s.posterUrl,
     trailerUrl: s.trailerUrl,
     offers: s.offers,
+    actors: s.actors,
+    directors: s.directors,
     averageRating: s.averageRating,
     ratingCount: s.ratingCount,
     myRating: user ? myRatings.get(s.id) ?? null : null,

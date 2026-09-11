@@ -123,6 +123,8 @@ export type CachedScreeningStats = {
   posterUrl: string | null;
   trailerUrl: string | null;
   offers: Offer[];
+  actors: string[];
+  directors: string[];
   averageRating: number | null;
   ratingCount: number;
 };
@@ -165,6 +167,8 @@ export const getArchive = unstable_cache(
         posterUrl: meta.posterUrl,
         trailerUrl: meta.trailerUrl,
         offers: capOffers(meta.offers),
+        actors: meta.actors,
+        directors: meta.directors,
         averageRating: average === null ? null : Math.round(average * 100) / 100,
         ratingCount: count,
       });

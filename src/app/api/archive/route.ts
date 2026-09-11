@@ -25,6 +25,8 @@ export async function GET() {
     posterUrl: s.posterUrl,
     trailerUrl: s.trailerUrl,
     offers: s.offers,
+    actors: s.actors,
+    directors: s.directors,
     averageRating: s.averageRating,
     ratingCount: s.ratingCount,
     myRating: myRatingById.get(s.id) ?? null,

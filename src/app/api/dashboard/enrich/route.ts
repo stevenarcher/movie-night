@@ -34,7 +34,13 @@ export async function POST(request: Request) {
       const meta = await tmdbMeta(candidate.title);
       const offers = meta.matchedId ? await tmdbOffers(meta.matchedId, candidate.title) : [];
 
-      const existing = (candidate.metadata ?? {}) as { posterUrl?: string; trailerUrl?: string; offers?: unknown[] };
+      const existing = (candidate.metadata ?? {}) as {
+        posterUrl?: string;
+        trailerUrl?: string;
+        offers?: unknown[];
+        actors?: string[];
+        directors?: string[];
+      };
       const mergedOffers = (offers.length > 0 ? offers : (existing.offers ?? [])) as Prisma.InputJsonValue;
       const updated = await prisma.candidate.update({
         where: { id: body.id },
@@ -42,6 +48,8 @@ export async function POST(request: Request) {
           metadata: {
             posterUrl: meta.posterUrl ?? existing.posterUrl ?? undefined,
             trailerUrl: meta.trailerUrl ?? existing.trailerUrl ?? undefined,
+            actors: meta.actors.length > 0 ? meta.actors : existing.actors,
+            directors: meta.directors.length > 0 ? meta.directors : existing.directors,
             offers: mergedOffers,
           },
         },
@@ -56,18 +64,26 @@ export async function POST(request: Request) {
     const meta = await tmdbMeta(screening.movieTitle);
     const offers = meta.matchedId ? await tmdbOffers(meta.matchedId, screening.movieTitle) : [];
 
-    const existing = (screening.metadata ?? {}) as { posterUrl?: string; trailerUrl?: string; offers?: unknown[] };
-    const mergedOffers = (offers.length > 0 ? offers : (existing.offers ?? [])) as Prisma.InputJsonValue;
-    const updated = await prisma.screening.update({
-      where: { id: body.id },
-      data: {
-        metadata: {
-          posterUrl: meta.posterUrl ?? existing.posterUrl ?? undefined,
-          trailerUrl: meta.trailerUrl ?? existing.trailerUrl ?? undefined,
-          offers: mergedOffers,
+    const existing = (screening.metadata ?? {}) as {
+        posterUrl?: string;
+        trailerUrl?: string;
+        offers?: unknown[];
+        actors?: string[];
+        directors?: string[];
+      };
+      const mergedOffers = (offers.length > 0 ? offers : (existing.offers ?? [])) as Prisma.InputJsonValue;
+      const updated = await prisma.screening.update({
+        where: { id: body.id },
+        data: {
+          metadata: {
+            posterUrl: meta.posterUrl ?? existing.posterUrl ?? undefined,
+            trailerUrl: meta.trailerUrl ?? existing.trailerUrl ?? undefined,
+            actors: meta.actors.length > 0 ? meta.actors : existing.actors,
+            directors: meta.directors.length > 0 ? meta.directors : existing.directors,
+            offers: mergedOffers,
+          },
         },
-      },
-    });
+      });
     revalidateTag(TAG_ARCHIVE, "max");
     return ok({ metadata: updated.metadata });
   } catch (error) {

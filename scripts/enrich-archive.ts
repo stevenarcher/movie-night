@@ -11,7 +11,14 @@ const prisma = new PrismaClient();
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-type Meta = { posterUrl?: string; trailerUrl?: string; offers: unknown[]; [k: string]: unknown };
+type Meta = {
+  posterUrl?: string;
+  trailerUrl?: string;
+  offers: unknown[];
+  actors?: string[];
+  directors?: string[];
+  [k: string]: unknown;
+};
 
 function hasPoster(metadata: unknown): boolean {
   const m = (metadata ?? {}) as { posterUrl?: unknown };
@@ -21,6 +28,11 @@ function hasPoster(metadata: unknown): boolean {
 function hasTrailer(metadata: unknown): boolean {
   const m = (metadata ?? {}) as { trailerUrl?: unknown };
   return typeof m.trailerUrl === "string" && m.trailerUrl.length > 0;
+}
+
+function hasCast(metadata: unknown): boolean {
+  const m = (metadata ?? {}) as { actors?: unknown; directors?: unknown };
+  return (Array.isArray(m.actors) && m.actors.length > 0) || (Array.isArray(m.directors) && m.directors.length > 0);
 }
 
 async function enrich(title: string, label: string) {
@@ -51,22 +63,23 @@ async function main() {
     select: { id: true, title: true, metadata: true },
   });
 
-  // Backfill both missing posters and missing trailers. Archive entries already
-  // carry posters from an earlier run, so filtering only on "missing poster" would
-  // skip them entirely and leave trailer links empty. Enrich those that lack a
-  // trailer so the archive shows watch links too.
+  // Backfill missing posters, trailers AND cast (actors/directors). Archive
+  // entries already carry posters from earlier runs, so filtering only on
+  // "missing poster" would skip them and leave trailers and cast empty. Enrich
+  // those that lack a trailer or cast so the archive shows watch links and
+  // recurring actors.
   const screeningMissingPoster = screenings.filter((s) => !hasPoster(s.metadata));
-  const screeningMissingTrailer = screenings.filter((s) => !hasTrailer(s.metadata));
-  const candidateMissing = candidates.filter((c) => !hasPoster(c.metadata));
+  const screeningMissing = screenings.filter((s) => !hasTrailer(s.metadata) || !hasCast(s.metadata));
+  const candidateMissing = candidates.filter((c) => !hasPoster(c.metadata) || !hasCast(c.metadata));
   console.log(
     `Screenings: ${screenings.length} (${screenings.length - screeningMissingPoster.length} have a poster, ` +
-      `${screeningMissingTrailer.length} missing a trailer)\n` +
-      `Candidates: ${candidates.length} (${candidates.length - candidateMissing.length} have a poster)\n`,
+      `${screeningMissing.length} missing a trailer or cast)\n` +
+      `Candidates: ${candidates.length} (${candidates.length - candidateMissing.length} have a poster and cast)\n`,
   );
 
   let updated = 0;
 
-  for (const s of screeningMissingTrailer) {
+  for (const s of screeningMissing) {
     const label = `${s.year} W${s.weekNumber}`;
     const alreadyHasPoster = hasPoster(s.metadata);
     const result = await enrich(s.movieTitle, label);
@@ -81,6 +94,8 @@ async function main() {
             ...prev,
             posterUrl: result.meta.posterUrl ?? prev.posterUrl,
             trailerUrl: result.meta.trailerUrl ?? prev.trailerUrl,
+            actors: result.meta.actors.length > 0 ? result.meta.actors : prev.actors,
+            directors: result.meta.directors.length > 0 ? result.meta.directors : prev.directors,
             offers,
           },
         },
@@ -101,6 +116,8 @@ async function main() {
             ...prev,
             posterUrl: result.meta.posterUrl,
             trailerUrl: result.meta.trailerUrl ?? undefined,
+            actors: result.meta.actors.length > 0 ? result.meta.actors : undefined,
+            directors: result.meta.directors.length > 0 ? result.meta.directors : undefined,
           },
         },
       });
@@ -110,7 +127,7 @@ async function main() {
   }
 
   console.log(
-    `\nDone! ${updated} enriched (${screeningMissingTrailer.length} screenings + ${candidateMissing.length} candidates to process).`,
+    `\nDone! ${updated} enriched (${screeningMissing.length} screenings + ${candidateMissing.length} candidates to process).`,
   );
 }
 

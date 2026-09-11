@@ -4,6 +4,9 @@ import type { Offer } from "./movie-meta";
 
 const IMG_URL = (path: string) => `https://image.tmdb.org/t/p/w500${path}`;
 
+/** How many billed cast members to store per film. */
+const MAX_ACTORS = 10;
+
 /** Reads lazily so scripts that call loadEnvFile() before use still pick the token up. */
 const token = () => process.env.TMDB_READ_TOKEN;
 
@@ -42,10 +45,34 @@ async function tmdbSearch(query: string): Promise<SearchResult[]> {
 async function tmdbDetails(id: number) {
   const TOKEN = token();
   if (!TOKEN) return null;
-  const url = `https://api.themoviedb.org/3/movie/${id}?append_to_response=videos&language=en-US`;
+  const url = `https://api.themoviedb.org/3/movie/${id}?append_to_response=videos,credits&language=en-US`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
   if (!res.ok) throw new Error(`details failed (${res.status}) for id ${id}`);
   return res.json();
+}
+
+type CreditsPayload = {
+  cast?: Array<{ name?: string; order?: number; known_for_department?: string }>;
+  crew?: Array<{ name?: string; job?: string; known_for_department?: string }>;
+};
+
+/** Leading acting cast, trimmed to `MAX_ACTORS`, by billing order. */
+function pickCast(credits: CreditsPayload | null | undefined): string[] {
+  const actors = (credits?.cast ?? [])
+    .filter((c) => c.name && c.known_for_department === "Acting")
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((c) => c.name!.trim())
+    .filter((n, i, all) => n.length > 0 && all.indexOf(n) === i);
+  return actors.slice(0, MAX_ACTORS);
+}
+
+/** Directors, in credit order, deduped. */
+function pickDirectors(credits: CreditsPayload | null | undefined): string[] {
+  const directors = (credits?.crew ?? [])
+    .filter((c) => c.name && c.job === "Director" && c.known_for_department === "Directing")
+    .map((c) => c.name!.trim())
+    .filter((n, i, all) => n.length > 0 && all.indexOf(n) === i);
+  return directors;
 }
 
 /** Prefer a result with a poster, favouring the kind of release era other results cluster in. */
@@ -70,6 +97,8 @@ export async function tmdbMeta(title: string): Promise<{
   matchedTitle: string | null;
   matchedYear: string | null;
   matchedId: number | null;
+  actors: string[];
+  directors: string[];
 }> {
   const query = QUERY_OVERRIDES[title] ?? title;
   const match = bestMatch(await tmdbSearch(query));
@@ -80,10 +109,13 @@ export async function tmdbMeta(title: string): Promise<{
       matchedTitle: null,
       matchedYear: null,
       matchedId: null,
+      actors: [],
+      directors: [],
     };
   }
   const details = (await tmdbDetails(match.id)) as {
     videos?: { results?: Array<{ site?: string; type?: string; official?: boolean; key?: string }> };
+    credits?: CreditsPayload;
   };
   return {
     posterUrl: IMG_URL(match.poster_path),
@@ -91,6 +123,8 @@ export async function tmdbMeta(title: string): Promise<{
     matchedTitle: match.title,
     matchedYear: match.release_date?.slice(0, 4) ?? null,
     matchedId: match.id,
+    actors: pickCast(details?.credits),
+    directors: pickDirectors(details?.credits),
   };
 }
 
@@ -132,23 +166,28 @@ export async function tmdbTvMeta(title: string): Promise<{
   trailerUrl: string | null;
   matchedTitle: string | null;
   matchedYear: string | null;
+  actors: string[];
+  directors: string[];
 }> {
   try {
     const match = (await tmdbSearchTv(title)).find((r) => r.poster_path);
     if (!match?.poster_path) {
-      return { posterUrl: null, trailerUrl: null, matchedTitle: null, matchedYear: null };
+      return { posterUrl: null, trailerUrl: null, matchedTitle: null, matchedYear: null, actors: [], directors: [] };
     }
     const details = (await tmdbDetails(match.id)) as {
       videos?: { results?: Array<{ site?: string; type?: string; official?: boolean; key?: string }> };
+      credits?: CreditsPayload;
     };
     return {
       posterUrl: IMG_URL(match.poster_path),
       trailerUrl: details ? pickTrailer(details) : null,
       matchedTitle: match.name,
       matchedYear: match.first_air_date?.slice(0, 4) ?? null,
+      actors: pickCast(details?.credits),
+      directors: pickDirectors(details?.credits),
     };
   } catch {
-    return { posterUrl: null, trailerUrl: null, matchedTitle: null, matchedYear: null };
+    return { posterUrl: null, trailerUrl: null, matchedTitle: null, matchedYear: null, actors: [], directors: [] };
   }
 }
 
